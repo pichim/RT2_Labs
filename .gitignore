@@ -4,9 +4,6 @@
 .vscode/launch.json
 .vscode/ipch
 .vscode/settings.json
-BUILD
-mbed-os
-docs/review
 __pycache__
 *.asv
 *.slxc
