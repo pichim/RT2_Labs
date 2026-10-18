@@ -5,6 +5,7 @@
 
 #include "DataLogger.h"
 #include "GPA.h"
+#include "swingup_trajectory.h"
 
 extern DataLogger myDataLogger;
 extern GPA myGPA;
@@ -44,17 +45,23 @@ void realtime_thread::loop(void)
 
     // --- AUFGABE 6.5 ---
     // variables for state space controller with integrator for velocity error
+    /*
     Matrix<float, 1, 4> K4(-2.1929f, -0.2016f, -0.0042f, 0.0100f);
     Matrix<float, 4, 1> x4(0.0f, 0.0f, 0.0f, 0.0f);
     float xi = 0.0f;
+    */
 
     // --- AUFGABE 7.1 ---
     // simple P controller gain
     const float kp = 0.2f;
+    const float spinup_time = 3.0f; // spin-up duration [s]
+    float spinup_start_time = 0.0f;
+    uint16_t swingup_sample = 0;
+    m_IO_handler->write_current(0.0f); // zero current before enabling the drive
 
     // --- AUFGABE 7.5 ---
     // excitation signal for frequency response measurement
-    float exc = 0.0f;
+    // float exc = 0.0f;
 
     while (true) {
         ThisThread::flags_wait_any(m_ThreadFlag);
@@ -94,18 +101,45 @@ void realtime_thread::loop(void)
 
                 // --- AUFGABE 7.1 ---
                 // simple P controller
-                i_des = kp * (w - phi_fw_vel);
+                i_des = -kp * phi_fw_vel; // zero wheel-speed setpoint while FLAT
 
                 // // --- AUFGABE 7.5 ---
                 // // use P controller to measure the frequency response
                 // i_des = kp * (w - phi_fw_vel + (exc + 4.0f * M_PIf));
 
-                // switch to BALANCE
+                // switch to SPIN_UP
                 if (do_transition) {
-                    m_state = BALANCE;
+                    spinup_start_time = time;
+                    m_state = SPIN_UP;
                 }
                 break;
             }
+            case SPIN_UP: {
+                // Finish the ramp before accepting a nonzero GUI setpoint.
+                const float w_spinup = swingup_omega2_0
+                    * saturate((time - spinup_start_time) / spinup_time, 0.0f, 1.0f);
+                i_des = kp * (w_spinup - phi_fw_vel);
+                if (time - spinup_start_time >= spinup_time
+                    && w != 0.0f) {
+                    swingup_sample = 0;
+                    m_state = SWING_UP;
+                }
+                break;
+            }
+            case SWING_UP: {
+                // Apply one MATLAB torque per Ts tick; keep MATLAB and firmware Ts equal.
+                if (swingup_sample < swingup_sample_count) {
+                    const float M = swingup_torque_Nm[swingup_sample++];
+                    i_des = M / km;
+                } else {
+                    // Balancing is disabled for now; stop after the last interval.
+                    m_state = INIT;
+                    m_IO_handler->disable_escon();
+                }
+                break;
+            }
+            // Uncomment BALANCE and its variables/measurements for later handover tests.
+            /*
             case BALANCE: {
                 // ------------------- BALANCE ----------------
 
@@ -132,6 +166,7 @@ void realtime_thread::loop(void)
                 }
                 break;
             }
+            */
             default:
                 break;
         }
@@ -146,16 +181,16 @@ void realtime_thread::loop(void)
         // --- AUFGABE 7.4 ---
         // log swing up and balancing data
         myDataLogger.write_to_log(time,
-                                  w,      // 1
-                                  i_des,  // 2
-                                  x4(0),  // 3
-                                  x4(1),  // 4
-                                  x4(2),  // 5
-                                  x4(3)); // 6
+                                  w,           // 1: GUI setpoint (trigger)
+                                  i_des,       // 2: commanded current [A]
+                                  phi_bd,      // 3: body angle [rad]
+                                  gz,          // 4: body angular velocity [rad/s]
+                                  phi_fw_vel,  // 5: relative wheel velocity [rad/s]
+                                  km * i_des); // 6: commanded torque [Nm]
 
         // --- AUFGABE 7.5 ---
         // measure the frequency response, GPA calculates future excitation exc(k+1)
-        exc = myGPA.update(i_des, phi_fw_vel);
+        // exc = myGPA.update(i_des, phi_fw_vel);
     }
 }
 

@@ -3,9 +3,10 @@
 % Henrici & Robbiani, Mathematics 2024, 12, 3675.
 % https://doi.org/10.3390/math12233675
 %
-% Run this script to create figures and the struct swingup. No firmware or
-% Simulink model is changed. Requires base MATLAB, no Symbolic/Optimization
-% Toolbox. Local functions below evaluate analytical derivatives.
+% Run this script to create figures, the struct swingup and the C++ torque
+% header. Rebuild and upload with PlatformIO to use the new trajectory.
+% Requires base MATLAB, no Symbolic/Optimization Toolbox.
+% Local functions below evaluate analytical derivatives.
 %
 % Convention: phi=-pi/4 initially, phi=0 upright; positive motor torque
 % accelerates the wheel in the world frame and acts negatively on the body.
@@ -21,8 +22,13 @@
 
 % Load shared mechanical parameters; add the motor constant used by the firmware.
 matlab_dir = fileparts(fileparts(mfilename('fullpath')));
-addpath(matlab_dir);
+addpath(matlab_dir, fileparts(mfilename('fullpath')));
 param = get_parameter();
+% Shared effective fit to data_swingup_03 and 04; experimental, not measured properties.
+% Tested in data_swingup_05: commands matched, but substantial tracking error remains.
+% See mini_cuboid_swingup_notes.md; these values are not a validated plant model.
+param.R = 0.059864129;  % [m], nominal 0.066
+param.J2 = 3.31487857e-4;  % [kg m^2], nominal 2.81e-4
 param.km = 36.9e-3;  % Motor torque constant [Nm/A]
 
 
@@ -65,12 +71,12 @@ phi2_0 = 0;  % Initial flywheel angle relative to the body [rad]
 
 %% Adjustable parameters: paper 2, Section 4.3 example
 
-% Selected test: ramp_slope=800; the paper's example uses 200.
+% Selected test: ramp_slope=200, the paper's smoother initial ramp.
 % The other settings retain the paper's example choices. These are tuning parameters;
 % the fitted coefficients, blend weights and initial wheel speed below
 % are calculated from them using OUR cuboid's physical parameters.
 % Thus this uses the paper's construction, not its example alpha and beta.
-ramp_slope = 800;  % Tuned ramp: paper's m [1/s], distinct from mass param.m
+ramp_slope = 200;  % Paper's m [1/s], distinct from mass param.m
 ramp_power = 1;  % Initial ramp: paper's n (denominator exponent)
 initial_excursion = -4;  % Eq. (25): coefficient of s^2*(s-1)^6 [rad]
 final_excursion = 3;  % Eq. (26): coefficient of s^6*(s-1)^2 [rad]
@@ -213,8 +219,9 @@ end
 torque_average(end) = torque(Trun);  % Terminal hold value, no interval after Trun
 current_average = torque_average / param.km;
 
-% Use the same single-precision current commands for the MATLAB prediction,
-% Simulink torque input and later C++ playback. No saturation is applied.
+% Use the same single-precision current commands for the MATLAB prediction
+% and Simulink torque input. C++ exports this torque as float and divides by km.
+% No saturation is applied.
 current_single = single(current_average);
 torque_command = double(current_single) * param.km;
 x_zoh = integrate_zoh(t, torque_command, x0, alpha, Theta, param.J2, 4);
@@ -332,6 +339,12 @@ if ~swingup.validation.contact_compatible
         ['Ideal trajectory dips below -45 deg. It is not directly executable ', ...
          'from rest on a table; contact/release needs separate treatment.']);
 end
+
+% Run mini_cuboid_swingup_ini, then export_swingup(swingup).
+% Generate include/swingup_trajectory.h and rebuild with PlatformIO.
+% Keep MATLAB Ts and the firmware Ts in src/main.cpp equal.
+% Export N interval-averaged torques; omit MATLAB's terminal hold sample.
+export_swingup(swingup);
 
 
 %% Figures

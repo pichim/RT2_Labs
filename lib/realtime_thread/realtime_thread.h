@@ -18,6 +18,8 @@ private:
     enum ControlState {
         INIT,
         FLAT,
+        SPIN_UP,
+        SWING_UP,
         BALANCE
     };
 
