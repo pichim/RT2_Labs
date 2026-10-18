@@ -1,0 +1,13 @@
+{
+    "target_overrides": {
+        "*": {
+            "target.printf_lib": "std",
+            "platform.stdio-baud-rate": 115200
+        }
+    },
+    "config": {
+        "main-stack-size": {
+            "value": 16384
+        }
+    }
+}
