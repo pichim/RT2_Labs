@@ -1,7 +1,9 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 
+#include "DebounceIn.h"
 #include "Encoder.h"
 #include "FastPWM.h"
 #include "mbed.h"
@@ -27,34 +29,41 @@ class IO_handler
 public:
     IO_handler();
     virtual ~IO_handler();
-    float read_encoder_motor() { return encoder_motor.getAngleRad(); }
-    float read_encoder_pendulum() { return encoder_pendulum.getAngleRad(-1.0f); }
-    void reset_encoders()
-    {
-        encoder_motor.reset();
-        encoder_pendulum.reset();
-    }
-    void write_pwm_motor(float val)
-    {
-        pwm_val = val;
-        pwm.write(pwm_val);
-    }
-    float get_set_value() const { return pwm_val; }
-    void set_enable_motor(bool en) { enable = en ? 1 : 0; }
-    float read_current() { return (current.read() * 3.3f - 1.5f) * -1.0f / (50.0f * 7.0e-3f); }
-    void set_dir(uint8_t d) { dir = d; }
-    void set_enable_rtt_do(bool en) { rtt_do = en ? 1 : 0; }
-    void set_enable_frtt_do(bool en) { frtt_do = en ? 1 : 0; }
+    void update(void); // Sample hardware once in fast_realtime_thread.
+    float read_encoder_motor(void);
+    float read_encoder_pendulum(void);
+    void reset_encoders(void);
+    void write_pwm_motor(float val);
+    float get_set_value(void) const;
+    void set_enable_motor(bool en);
+    float read_current(void);
+    void set_dir(uint8_t d);
+    void set_enable_rtt_do(bool en);
+    void set_enable_frtt_do(bool en);
+
+    // Cached telemetry; UART must not read/update the encoder counters itself.
+    float get_current(void) const;
+    float get_theta1(void) const;
+    float get_theta2(void) const;
+    void set_user_led(bool on);
+    bool get_and_reset_button_state(void);
 
 private:
-    Encoder encoder_motor;    // Motor encoder
-    Encoder encoder_pendulum; // Pendulum encoder
-    FastPWM pwm;              // PWM for motor
-    float pwm_val;            // stored PWM value
-    DigitalOut dir;           // Direction for motor
-    DigitalOut enable;        // Enable power h-bridge
-    AnalogIn current;         // Current sensing
-    DigitalIn fault;          // Fault status flag
-    DigitalOut rtt_do;        // Real-time thread debug output
-    DigitalOut frtt_do;       // Fast real-time thread debug output
+    DebounceIn m_button;
+    DigitalOut m_user_led;
+    volatile bool m_button_pressed{false};
+    // Individual UART telemetry values are shared with the fast control thread.
+    std::atomic<float> m_current{0.0f}, m_theta1{0.0f}, m_theta2{0.0f};
+    void button_pressed(void);
+
+    Encoder m_encoder_motor;    // Motor encoder
+    Encoder m_encoder_pendulum; // Pendulum encoder
+    FastPWM m_pwm;              // PWM for motor
+    float m_pwm_val;            // stored PWM value
+    DigitalOut m_dir;           // Direction for motor
+    DigitalOut m_enable;        // Enable power h-bridge
+    AnalogIn m_current_sensor; // Current sensing
+    DigitalIn m_fault;          // Fault status flag
+    DigitalOut m_rtt_do;        // Real-time thread debug output
+    DigitalOut m_frtt_do;       // Fast real-time thread debug output
 };

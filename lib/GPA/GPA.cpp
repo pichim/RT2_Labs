@@ -1,5 +1,6 @@
 /*
-    GPA: Frequency point wise gain and phase analyser to measure a frequency respone function (FRF) of a dynamical system
+    GPA: Frequency point wise gain and phase analyser to measure a frequency respone function (FRF) of a dynamical
+system
 
          Hint:        If the plant has a pole at zero, is unstable or weakly damped the measurement has to be perfomed
                       in closed loop (this is NOT tfestimate, the algorithm is based on the one point DFT).
@@ -29,7 +30,8 @@
 
     Instantiate option 1: ("Jedi or Sith Lord", for logarithmic equaly spaced frequency points)
 
-        GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep)
+        GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int
+Nstart, int Nsweep)
 
             fMin:       Minimal desired frequency that should be measured in Hz
             fMax:       Maximal desired frequency that should be measured in Hz
@@ -45,18 +47,19 @@
 
     Instantiate option 2: (for a second, refined frequency grid measurement)
 
-        GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep)
+        GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float
+Aexc1, int Nstart, int Nsweep)
 
-            f0:         Frequency point for the calculation of Aexc0 in Hz (should be chosen like in the first measurement)
-            f1:         Frequency point for the calculation of Aexc1 in Hz (should be chosen like in the first measurement)
-            *fexcDes:   Sorted frequency point array in Hz
-            NfexcDes:   Length of fexcDes
+            f0:         Frequency point for the calculation of Aexc0 in Hz (should be chosen like in the first
+measurement) f1:         Frequency point for the calculation of Aexc1 in Hz (should be chosen like in the first
+measurement) *fexcDes:   Sorted frequency point array in Hz NfexcDes:   Length of fexcDes
 
             For the other parameters see above.
 
     Instantiate option 3: (for an arbitary but sorted frequency grid measurement)
 
-        GPA(float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep)
+        GPA(float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int
+Nsweep)
 
             *fexcDes:   Sorted frequency point array in Hz
             Aexc0:      Excitation amplitude at fexcDes[0]
@@ -87,10 +90,10 @@
             exc = Wobble(exc, y);
 
             Closed loop FRF calculus with a stabilizing controller C:
-                S  = 1/(1 + C*P);  % ( exc1 -> e ,   1/(1 + C*P) ) sensitivity, contr. error rejection, robustness (1/max|S|)
-                T  = 1 - S;        % ( w -> y    , C*P/(1 + C*P) ) compl. sensitivity, tracking performance
-                CS = C*S;          % ( exc1 -> u ,   C/(1 + C*P) ) control effort, disturbance plant output on plant input
-                PS = P*S;          % ( exc2 -> y ,   P/(1 + C*P) ) compliance, disturbance plant input on plant output
+                S  = 1/(1 + C*P);  % ( exc1 -> e ,   1/(1 + C*P) ) sensitivity, contr. error rejection, robustness
+(1/max|S|) T  = 1 - S;        % ( w -> y    , C*P/(1 + C*P) ) compl. sensitivity, tracking performance CS = C*S; % (
+exc1 -> u ,   C/(1 + C*P) ) control effort, disturbance plant output on plant input PS = P*S;          % ( exc2 -> y ,
+P/(1 + C*P) ) compliance, disturbance plant input on plant output
 
 
     Pseudo code for a closed loop measurement with stabilizing controller C:
@@ -101,7 +104,7 @@
 
             u = C(w - y + exc);
             ... write output u here! it follows exc(k+1) ...
-            exc = gpa(u, y);
+            exc = Wobble(u, y);
 
             Closed loop FRF calculus:
                 S  = 1 - T;
@@ -115,7 +118,7 @@
 
             u = C(w - y) + exc;
             ... write output u here! it follows exc(k+1) ...
-            exc = gpa(u, y);
+            exc = Wobble(u, y);
 
             Closed loop FRF calculus:
                 S  = PS/P;
@@ -123,22 +126,25 @@
                 CS = T/P;
                 C  = C/S;
 
+
     Usage:
-        exc(k+1) = gpa(inp(k), out(k)) does update the internal states of the
+        exc(k+1) = myGPA(inp(k), out(k)) does update the internal states of the
         gpa at the timestep k and returns the excitation signal for the timestep
         k+1. The FRF data are plotted to a terminal (Putty) over a serial
         connection and look as follows:
 
-    In MATLAB you can use:
-        U = data(:,2) + 1i*data(:,3);
-        Y = data(:,4) + 1i*data(:,5);
-        R = data(:,6) + 1i*data(:,7);
-        P = frd(Y./U, data(:,1), Ts, 'Units', 'Hz');
-        T = frd(Y./R, data(:,1), Ts, 'Units', 'Hz');
-        S = 1 - T;
-        C = T/S/P;
-        SC = S*C;
-        SP = S*P;
+--------------------------------------------------------------------------------
+  fexc[Hz]    |Gyu|    deg(Gyu)  |Gyr|    deg(Gyr)   |U|       |Y|       |R|
+--------------------------------------------------------------------------------
+ 5.0000e-02 1.001e+00   -0.309 1.001e+00   -0.309 4.000e-01 4.000e-01 4.005e-01
+    .           .         .        .         .        .         .         .
+    .           .         .        .         .        .         .         .
+    .           .         .        .         .        .         .         .
+
+    In Matlab you can use the editor as follows:
+        data = [... insert measurement data here ...];
+        gyu = frd(data(:,2).*exp(1i*data(:,3)*pi/180), data(:,1), Ts, 'Units', 'Hz');
+        gyr = frd(data(:,4).*exp(1i*data(:,5)*pi/180), data(:,1), Ts, 'Units', 'Hz');
 
     If you're evaluating more than one measurement which contain equal frequency points use:
         data = [data1; data2];
@@ -146,56 +152,66 @@
         data = data(ind,:);
 
 
-    Autor and Copyrigth: 2018-2021 / M.E. Peter
+    Autor and Copyrigth: 2018 / 2019 / 2020 / M.E. Peter
 
 */
+
+#include "GPA.h"
+
+#include "math.h"
+#include "mbed.h"
+#define pi 3.14159265358979323846 // M_PI
+
+using namespace std;
 
 // -----------------------------------------------------------------------------
 //      instantiate
 // -----------------------------------------------------------------------------
 
-#include "GPA.h"
-
-GPA::GPA() : m_BufferedSerial(USBTX, USBRX) {
-    setUpBufferedSerial();
+GPA::GPA(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts)
+{
+    setup(fMin, fMax, NfexcDes, Aexc0, Aexc1, Ts);
 }
 
-void GPA::setUpBufferedSerial()
+GPA::GPA(float fMin,
+         float fMax,
+         int NfexcDes,
+         int NperMin,
+         int NmeasMin,
+         float Ts,
+         float Aexc0,
+         float Aexc1,
+         int Nstart,
+         int Nsweep)
 {
-    m_BufferedSerial.set_baud(2000000);
-    m_BufferedSerial.set_blocking(false);
+    doPrint = true;
+    new_data_available = false;
+    meas_is_finished = false;
+    start_now = false;
+    setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint);
 }
 
-GPA::GPA(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts) : m_BufferedSerial(USBTX, USBRX)
+GPA::GPA(float f0,
+         float f1,
+         float *fexcDes,
+         int NfexcDes,
+         int NperMin,
+         int NmeasMin,
+         float Ts,
+         float Aexc0,
+         float Aexc1,
+         int Nstart,
+         int Nsweep)
 {
-    setUpBufferedSerial();
-    doPrint = false;
-    doPrecalcParam = true;
-    int NperMin = 3;
-    int NmeasMin = (int)ceil(1.0f/Ts);
-    int Nstart = (int)ceil(3.0f/Ts);
-    int Nsweep = (int)ceil(0.0f/Ts);
-    init(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
-}
+    doPrint = true;
+    new_data_available = false;
+    meas_is_finished = false;
 
-GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep) : m_BufferedSerial(USBTX, USBRX)
-{
-    setUpBufferedSerial();
-    doPrint = false;
-    doPrecalcParam = true;
-    init(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
-}
-
-GPA::GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep) : m_BufferedSerial(USBTX, USBRX)
-{
-    setUpBufferedSerial();
-    doPrint = false;
-    doPrecalcParam = true;
     assignParameters(NfexcDes, NperMin, NmeasMin, Ts, Nstart, Nsweep);
 
     // convert fexcDes from float to float, it is assumed that it is sorted
-    this->fexcDes = (float*)malloc(NfexcDes*sizeof(float));
-    for(int i = 0; i < NfexcDes; i++) {
+    this->fexcDes = (float *)malloc(NfexcDes * sizeof(float));
+    for (int i = 0; i < NfexcDes; i++) {
         this->fexcDes[i] = (float)fexcDes[i];
     }
 
@@ -203,22 +219,17 @@ GPA::GPA(float f0, float f1, float *fexcDes, int NfexcDes, int NperMin, int Nmea
     initializeConstants(Ts);
     assignFilterStorage();
     reset();
-    if(doPrecalcParam) {
-        assignAndResetParamStorage();
-        precalcParam();
-    }
 }
 
-GPA::GPA(float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep) : m_BufferedSerial(USBTX, USBRX)
+GPA::GPA(
+    float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep)
 {
-    setUpBufferedSerial();
-    doPrint = false;
-    doPrecalcParam = true;
+    doPrint = true;
     assignParameters(NfexcDes, NperMin, NmeasMin, Ts, Nstart, Nsweep);
 
     // convert fexcDes from float to float, it is assumed that it is sorted
-    this->fexcDes = (float*)malloc(NfexcDes*sizeof(float));
-    for(int i = 0; i < NfexcDes; i++) {
+    this->fexcDes = (float *)malloc(NfexcDes * sizeof(float));
+    for (int i = 0; i < NfexcDes; i++) {
         this->fexcDes[i] = fexcDes[i];
     }
 
@@ -226,63 +237,87 @@ GPA::GPA(float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, floa
     initializeConstants(Ts);
     assignFilterStorage();
     reset();
-    if(doPrecalcParam) {
-        assignAndResetParamStorage();
-        precalcParam();
-    }
 }
 
-GPA::GPA(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam) : m_BufferedSerial(USBTX, USBRX)
+GPA::GPA(float fMin,
+         float fMax,
+         int NfexcDes,
+         int NperMin,
+         int NmeasMin,
+         float Ts,
+         float Aexc0,
+         float Aexc1,
+         int Nstart,
+         int Nsweep,
+         bool doPrint)
 {
-    setUpBufferedSerial();
-    init(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint, doPrecalcParam);
+    setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint);
 }
 
-void GPA::init(float fMin, float fMax, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep, bool doPrint, bool doPrecalcParam)
+// -----------------------------------------------------------------------------
+void GPA::setup(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts)
+{
+    doPrint = false;
+    this->Ts = Ts;
+    int NperMin = 3;
+    int NmeasMin = (int)ceil(1.0f / Ts);
+    int Nstart = (int)ceil(3.0f / Ts);
+    int Nsweep = (int)ceil(0.0f / Ts);
+    new_data_available = false;
+    meas_is_finished = false;
+    start_now = false;
+    status = 0;
+
+    setParameters(fMin, fMax, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep, doPrint);
+}
+
+// ------------------- deconstructor ---------------------
+GPA::~GPA() {}
+
+float GPA::get_Ts() { return this->Ts; }
+uint8_t GPA::get_i() { return (uint8_t)testpoint; }
+void GPA::setParameters(float fMin,
+                        float fMax,
+                        int NfexcDes,
+                        int NperMin,
+                        int NmeasMin,
+                        float Ts,
+                        float Aexc0,
+                        float Aexc1,
+                        int Nstart,
+                        int Nsweep,
+                        bool doPrint)
 {
     this->doPrint = doPrint;
-    this->doPrecalcParam = doPrecalcParam;
     assignParameters(NfexcDes, NperMin, NmeasMin, Ts, Nstart, Nsweep);
 
     // calculate logarithmic spaced frequency points
-    fexcDes = (float*)malloc(NfexcDes*sizeof(float));
+    fexcDes = (float *)malloc(NfexcDes * sizeof(float));
     fexcDesLogspace(fMin, fMax, NfexcDes);
 
     calculateDecreasingAmplitudeCoefficients(Aexc0, Aexc1);
     initializeConstants(Ts);
     assignFilterStorage();
     reset();
-    if(doPrecalcParam) {
-        assignAndResetParamStorage();
-        precalcParam();
-    }
 }
 
 void GPA::reset()
 {
-    m_print_cntr = 0;
-
-    memset(&gpaData, 0, sizeof(gpaData));
-
     Nmeas = 0;
     Nper = 0;
     dfexc = 0.0;
     fexc = 0.0;
     fexcPast = 0.0f;
     dfexcj = 0.0f;
-    i = 1; // iterating through desired frequency points
-    j = 1; // iterating through measurement points w.r.t. reachable frequency
+    f_iter = 1; // iterating through desired frequency points
+    j_iter = 1; // iterating through measurement points w.r.t. reachable frequency
     scaleG = 0.0;
     cr = 0.0;
     ci = 0.0;
-    for(int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) {
         sU[i] = 0.0;
         sY[i] = 0.0;
-#if GPA_EXC_VIA_FILTER
-        sR[i] = 0.0;
-#endif
     }
-    exc = 0.0f;
     sinarg = 0.0;
     sinargR = 0.0f;
     NmeasTotal = 0;
@@ -290,16 +325,18 @@ void GPA::reset()
     pi2Tsfexc = 0.0;
     Nsweep_i = Nstart;
     AexcOut = 0.0f;
-    gpaData.fexc  = 0.0f;
-    gpaData.Ureal = 0.0f;
-    gpaData.Uimag = 0.0f;
-    gpaData.Yreal = 0.0f;
-    gpaData.Yimag = 0.0f;
-    gpaData.Rreal = 0.0f;
-    gpaData.Rimag = 0.0f;
+    gpaData.fexc = 0.0f;
+    gpaData.absGyu = 0.0f;
+    gpaData.angGyu = 0.0f;
+    gpaData.absGyr = 0.0f;
+    gpaData.angGyr = 0.0f;
+    gpaData.Umag = 0.0f;
+    gpaData.Ymag = 0.0f;
+    gpaData.Rmag = 0.0f;
     gpaData.MeasPointFinished = false;
     gpaData.MeasFinished = false;
     gpaData.ind = -1;
+    status = 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -308,151 +345,111 @@ void GPA::reset()
 
 float GPA::update(float inp, float out)
 {
-    static bool do_reset_timer{true};
-    static Timer timer;
-
     // a new frequency point has been reached
-    if(j == 1) {
+    if (status != 2)
+        return 0;
+    if (j_iter == 1) {
         // user info
-        if(i == 1 && doPrint) {
-            printf("   fexc[Hz]       Ureal         Uimag         Yreal         Yimag         Rreal         Rimag     T avg. mus   Cntr\n");
+        if (f_iter == 1) {
+            start_now = true;
         }
+
         // get a new unique frequency point
-        while(fexc == fexcPast) {
-            if(doPrecalcParam) {
-                // measurement finished
-                if(i > NfexcAct) {
-                    gpaData.MeasPointFinished = false;
-                    gpaData.MeasFinished = true;
-                    return 0.0f;
-                }
-                Nper  = Nper_vec[i-1];
-                Nmeas = Nmeas_vec[i-1];
-                fexc  = fexc_vec[i-1];
-                Aexc  = Aexc_vec[i-1];
-                pi2Tsfexc = pi2Ts*fexc;
+        while (fexc == fexcPast) {
+            // measurement finished
+            if (f_iter > NfexcDes) {
+                gpaData.MeasPointFinished = false;
+                gpaData.MeasFinished = true;
+                meas_is_finished = true;
+                status = 0;
+                return 0.0f;
+            }
+            calcGPAmeasPara(fexcDes[f_iter - 1]);
+            // secure fexc is not higher or equal to nyquist frequency
+            if (fexc > fnyq) {
+                fexc = fexcPast;
+            }
+            // no frequency found
+            if (fexc == fexcPast) {
+                f_iter += 1;
             } else {
-                // measurement finished
-                if(i > NfexcDes) {
-                    gpaData.MeasPointFinished = false;
-                    gpaData.MeasFinished = true;
-                    return 0.0f;
-                }
-                calcGPAmeasPara(fexcDes[i - 1]);
-                // secure fexc is not higher or equal to nyquist frequency
-                if(fexc >= fnyq) {
-                    fexc = fexcPast;
-                }
-                // no frequency found
-                if(fexc == fexcPast) {
-                    i += 1;
-                } else {
-                    Aexc = aAexcDes/fexc + bAexcDes;
-                    pi2Tsfexc = pi2Ts*fexc;
-                }
+                Aexc = aAexcDes / fexc + bAexcDes;
+                pi2Tsfexc = pi2Ts * fexc;
             }
         }
         // filter scaling
-        scaleG = 1.0/sqrt((double)Nmeas);
+        scaleG = 1.0 / sqrt((double)Nmeas);
         // filter coefficients
         cr = cos(pi2Tsfexc);
         ci = sin(pi2Tsfexc);
         // set filter storage zero
-        for(int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             sU[i] = 0.0;
             sY[i] = 0.0;
-#if GPA_EXC_VIA_FILTER
-            sR[i] = 0.0;
-#endif
         }
         gpaData.MeasPointFinished = false;
     }
     // perfomre the sweep or measure
-    if(j <= Nsweep_i) {
-        /* this calculation takes 6 mus, 29.06.2021 */
-        // timer.start();
-        // timer.reset();
-        dfexcj = ((float)j - 1.0f)/((float)Nsweep_i - 1.0f);
-        dfexcj = div12pi*sinf(pi4*dfexcj) - div812pi*sinf((float)pi2*dfexcj) + dfexcj;
-        dfexc  = fexcPast + (fexc - fexcPast)*dfexcj;
-        AexcOut = AexcPast + (Aexc - AexcPast)*dfexcj;
-        // float dt = timer.read()*1000000.0f;
-        // printf("%6i", (int)dt);
+    if (j_iter <= Nsweep_i) {
+        dfexcj = ((float)j_iter - 1.0f) / ((float)Nsweep_i - 1.0f);
+        dfexcj = div12pi * sinf(pi4 * dfexcj) - div812pi * sinf((float)pi2 * dfexcj) + dfexcj;
+        dfexc = fexcPast + (fexc - fexcPast) * dfexcj;
+        AexcOut = AexcPast + (Aexc - AexcPast) * dfexcj;
     } else {
         dfexc = fexc;
         AexcOut = Aexc;
         // one point DFT filter step for signal su
-        sU[0] = scaleG*(double)(inp) + 2.0*cr*sU[1] - sU[2];
+        sU[0] = scaleG * inp + 2.0 * cr * sU[1] - sU[2];
         sU[2] = sU[1];
         sU[1] = sU[0];
         // one point DFT filter step for signal sy
-        sY[0] = scaleG*(double)(out) + 2.0*cr*sY[1] - sY[2];
+        sY[0] = scaleG * out + 2.0 * cr * sY[1] - sY[2];
         sY[2] = sY[1];
         sY[1] = sY[0];
-#if GPA_EXC_VIA_FILTER
-        // one point DFT filter step for signal sr
-        sR[0] = scaleG*(double)(exc) + 2.0*cr*sR[1] - sR[2];
-        sR[2] = sR[1];
-        sR[1] = sR[0];
-#endif
-        if (do_reset_timer) {
-            do_reset_timer = false;
-            timer.start();
-            timer.reset();
-        }
     }
-    // copy starting value for angle(R)
-    if(j == 1 || j == Nsweep_i + 1)
+    // copy starting value for ang(R)
+    if (j_iter == 1 || j_iter == Nsweep_i + 1)
         sinargR = sinarg;
     // measurement of frequencypoint is finished
-    if(j == Nmeas + Nsweep_i) {
-        const uint32_t meas_time = std::chrono::duration_cast<std::chrono::microseconds>(timer.elapsed_time()).count();
+    if (j_iter == Nmeas + Nsweep_i) {
         fexcPast = fexc;
         AexcPast = Aexc;
         Nsweep_i = Nsweep;
-        // calculate real and imaginary pars of the signal spectras
-        gpaData.fexc  = (float)fexc;
-        gpaData.Ureal = (float)(2.0*scaleG*(cr*sU[1] - sU[2]));
-        gpaData.Uimag = (float)(2.0*scaleG*ci*sU[1]);
-        gpaData.Yreal = (float)(2.0*scaleG*(cr*sY[1] - sY[2]));
-        gpaData.Yimag = (float)(2.0*scaleG*ci*sY[1]);
-#if GPA_EXC_VIA_FILTER
-        gpaData.Rreal = (float)(2.0*scaleG*(cr*sR[1] - sR[2]));
-        gpaData.Rimag = (float)(2.0*scaleG*ci*sR[1]);
-#else
-        gpaData.Rreal = Aexc*cosf(sinargR - piDiv2);
-        gpaData.Rimag = Aexc*sinf(sinargR - piDiv2);
-#endif
+        // calculate the one point dft
+        float Ureal = (float)(2.0 * scaleG * (cr * sU[1] - sU[2]));
+        float Uimag = (float)(2.0 * scaleG * ci * sU[1]);
+        float Yreal = (float)(2.0 * scaleG * (cr * sY[1] - sY[2]));
+        float Yimag = (float)(2.0 * scaleG * ci * sY[1]);
+        // calculate magnitude and angle
+        float Umag = sqrtf(Ureal * Ureal + Uimag * Uimag);
+        float Ymag = sqrtf(Yreal * Yreal + Yimag * Yimag);
+        gpaData.fexc = (float)fexc;
+        gpaData.absGyu = Ymag / Umag;
+        gpaData.angGyu = wrapAngle(atan2f(Yimag, Yreal) - atan2f(Uimag, Ureal)) * rad2deg;
+        gpaData.absGyr = Ymag / Aexc;
+        gpaData.angGyr = wrapAngle(atan2f(Yimag, Yreal) + fmod(piDiv2 - sinargR, (float)pi2)) * rad2deg;
+        gpaData.Umag = Umag;
+        gpaData.Ymag = Ymag;
+        gpaData.Rmag = Aexc;
         gpaData.MeasPointFinished = true;
         gpaData.ind++;
         // user info
-        if(doPrint) {
-            const float avg_time = static_cast<float>(meas_time) / static_cast<float>(Nmeas - 1);           
-            const int buffer_length = snprintf(m_buffer, BUFFER_LENGTH,
-                                               "%12.5e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %11.4e %4d\r\n",
-                                               gpaData.fexc,
-                                               gpaData.Ureal, gpaData.Uimag,
-                                               gpaData.Yreal, gpaData.Yimag,
-                                               gpaData.Rreal, gpaData.Rimag,
-                                               avg_time, m_print_cntr);
-            if (buffer_length >= 0 && buffer_length < BUFFER_LENGTH) {
-                if (m_BufferedSerial.writable()) {
-                    m_BufferedSerial.write(m_buffer, buffer_length);
-                    m_print_cntr++;
-                }
-            }
+        testpoint = (uint8_t)f_iter + 100;
+        new_data_available = true;
+        // printf("new_data_available = true;\r\n");
+        if (doPrint) {
+            // printf("%11.4e %9.3e %8.3f %9.3e %8.3f %9.3e %9.3e %9.3e\r\n", gpaData.fexc, gpaData.absGyu,
+            // gpaData.angGyu, gpaData.absGyr, gpaData.angGyr, gpaData.Umag, gpaData.Ymag, gpaData.Rmag);
         }
-        i += 1;
-        j = 1;
-        do_reset_timer = true;
+        f_iter += 1;
+        j_iter = 1;
     } else {
-        j += 1;
+        j_iter += 1;
     }
     // calculate the excitation
-    sinarg = fmod(sinarg + pi2Ts*dfexc, pi2);
+    sinarg = fmod(sinarg + pi2Ts * dfexc, pi2);
     NmeasTotal += 1;
-    exc = AexcOut*sinf(sinarg);
-    return exc;
+    return AexcOut * sinf(sinarg);
 }
 
 // -----------------------------------------------------------------------------
@@ -472,53 +469,35 @@ void GPA::assignParameters(int NfexcDes, int NperMin, int NmeasMin, float Ts, in
 void GPA::calculateDecreasingAmplitudeCoefficients(float Aexc0, float Aexc1)
 {
     // calculate coefficients for decreasing amplitude (1/fexc)
-    this->aAexcDes = (Aexc1 - Aexc0)/(1.0f/fexcDes[NfexcDes-1] - 1.0f/fexcDes[0]);
-    this->bAexcDes = Aexc0 - aAexcDes/fexcDes[0];
+    this->aAexcDes = (Aexc1 - Aexc0) / (1.0f / fexcDes[NfexcDes - 1] - 1.0f / fexcDes[0]);
+    this->bAexcDes = Aexc0 - aAexcDes / fexcDes[0];
 }
 
 void GPA::initializeConstants(float Ts)
 {
-    this->fnyq     = 1.0f / (2.0f * Ts);
-    this->pi2      = 2.0 * M_PI;
-    this->pi4      = 4.0f * M_PIf;
-    this->pi2Ts    = 2.0 * M_PI * (double)Ts;
-    this->piDiv2   = M_PIf / 2.0f;
-    this->rad2deg  = 180.0f / M_PIf;
-    this->div12pi  = 1.0f / (12.0f * M_PIf);
-    this->div812pi = 8.0f / (12.0f * M_PIf);
+    fnyq = 1.0f / 2.0f / Ts;
+    pi2 = 2.0 * pi;
+    pi4 = 4.0f * (float)pi;
+    pi2Ts = 2.0 * pi * (double)Ts; // 2.0*pi*Ts;
+    piDiv2 = (float)pi / 2.0f;
+    rad2deg = 180.0f / (float)pi;
+    div12pi = 1.0f / (12.0f * (float)pi);
+    div812pi = 8.0f / (12.0f * (float)pi);
 }
 
 void GPA::assignFilterStorage()
 {
-    sU = (double*)malloc(3*sizeof(double));
-    sY = (double*)malloc(3*sizeof(double));
-#if GPA_EXC_VIA_FILTER
-    sR = (double*)malloc(3*sizeof(double));
-#endif
-}
-
-void GPA::assignAndResetParamStorage()
-{
-    Nper_vec  = (int*)malloc(NfexcDes*sizeof(int));
-    Nmeas_vec = (int*)malloc(NfexcDes*sizeof(int));
-    fexc_vec  = (double*)malloc(NfexcDes*sizeof(double));
-    Aexc_vec  = (float*)malloc(NfexcDes*sizeof(float));
-    for(int i = 0; i < NfexcDes; i++) {
-        Nper_vec[i]  = 0;
-        Nmeas_vec[i] = 0;
-        fexc_vec[i]  = 0.0;
-        Aexc_vec[i]  = 0.0f;
-    }
-    NfexcAct = 0;
+    sU = (double *)malloc(3 * sizeof(double));
+    sY = (double *)malloc(3 * sizeof(double));
 }
 
 void GPA::fexcDesLogspace(float fMin, float fMax, int NfexcDes)
 {
     // calculate logarithmic spaced frequency points
-    float Gain = log10f(fMax/fMin)/((float)NfexcDes - 1.0f);
-    float expon = 0.0;
-    for(int i = 0; i < NfexcDes; i++) {
-        fexcDes[i] = fMin*powf(10.0f, expon);
+    float Gain = log10f(fMax / fMin) / ((float)NfexcDes - 1.0f);
+    float expon = 0.0f;
+    for (int i = 0; i < NfexcDes; i++) {
+        fexcDes[i] = fMin * powf(10.0f, expon);
         expon += Gain;
     }
 }
@@ -527,42 +506,28 @@ void GPA::calcGPAmeasPara(float fexcDes_i)
 {
     // Nmeas has to be an integer
     Nper = NperMin;
-    Nmeas = (int)floor((float)Nper/fexcDes_i/Ts + 0.5f);
+    Nmeas = (int)floor((float)Nper / fexcDes_i / Ts + 0.5f);
     //  secure that the minimal number of measurements is fullfilled
     int Ndelta = NmeasMin - Nmeas;
-    if(Ndelta > 0) {
-        Nper = (int)ceil((float)NmeasMin*fexcDes_i*Ts);
-        Nmeas = (int)floor((float)Nper/fexcDes_i/Ts + 0.5f);
+    if (Ndelta > 0) {
+        Nper = (int)ceil((float)NmeasMin * fexcDes_i * Ts);
+        Nmeas = (int)floor((float)Nper / fexcDes_i / Ts + 0.5f);
     }
     // evaluating reachable frequency
-    fexc = (float)((double)Nper/(double)Nmeas/(double)Ts);
-}
-
-void GPA::precalcParam()
-{
-    for(int i = 0; i < NfexcDes; i++) {
-        calcGPAmeasPara(fexcDes[i]);
-        if(fexc != fexcPast && fexc < fnyq) {
-            Aexc = aAexcDes/fexc + bAexcDes;
-            fexcPast = fexc;
-            AexcPast = Aexc;
-            // this is a reachable frequency point
-            Nper_vec[i]  = Nper;
-            Nmeas_vec[i] = Nmeas;
-            fexc_vec[i]  = fexc;
-            Aexc_vec[i]  = Aexc;
-            NfexcAct++;
-        }
-    }
-    reset();
+    fexc = (float)((double)Nper / (double)Nmeas / (double)Ts);
 }
 
 float GPA::wrapAngle(float angle)
 {
     // wrap angle from (-2pi,2pi) into (-pi,pi)
-    if(fabsf(angle) > M_PIf)
+    if (abs(angle) > (float)pi)
         angle -= copysignf(-(float)pi2, angle); // -1*sign(angle)*2*pi + angle;
     return angle;
+}
+
+void GPA::printLongLine()
+{
+    // printf("-------------------------------------------------------------------------------------------------------------------------------\r\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -571,32 +536,34 @@ float GPA::wrapAngle(float angle)
 
 void GPA::printGPAfexcDes()
 {
-    for(int i = 0; i < NfexcDes; i++) {
-        printf("%9.4f\n", fexcDes[i]);
+    printLine();
+    for (int i = 0; i < NfexcDes; i++) {
+        printf("%9.4f\r\n", fexcDes[i]);
     }
 }
 
 void GPA::printGPAmeasPara()
 {
-    printf(" fexcDes[Hz]   fexc[Hz]     Aexc      Nmeas   Nper  Nsweep_i\n");
-    wait_us(10000);
-    for(int i = 0; i < NfexcDes; i++) {
+    printLine();
+    printf(" fexcDes[Hz]   fexc[Hz]     Aexc      Nmeas   Nper  Nsweep_i\r\n");
+    printLine();
+    for (int i = 0; i < NfexcDes; i++) {
         calcGPAmeasPara(fexcDes[i]);
-        if(fexc == fexcPast || fexc >= fnyq) {
+        if (fexc == fexcPast || fexc >= fnyq) {
             fexc = 0.0;
             Aexc = 0.0f;
             Nmeas = 0;
             Nper = 0;
             Nsweep_i = 0;
         } else {
-            Aexc = aAexcDes/fexc + bAexcDes;
+            Aexc = aAexcDes / fexc + bAexcDes;
             fexcPast = fexc;
             AexcPast = Aexc;
         }
         NmeasTotal += Nmeas;
         NmeasTotal += Nsweep_i;
-        printf("%11.4e %12.4e %10.3e %7i %6i %7i\n", fexcDes[i], (float)fexc, Aexc, Nmeas, Nper, Nsweep_i);
-        // wait_us(100 * 1000);
+        printf("%11.4e %12.4e %10.3e %7i %6i %7i\r\n", fexcDes[i], (float)fexc, Aexc, Nmeas, Nper, Nsweep_i);
+        //        wait(0.01);
         Nsweep_i = Nsweep;
     }
     printGPAmeasTime();
@@ -605,22 +572,31 @@ void GPA::printGPAmeasPara()
 
 void GPA::printGPAmeasTime()
 {
-    printf(" Number of data points :  %11i\n", NmeasTotal);
-    printf(" Measurment time in sec: %12.2f\n", (float)NmeasTotal*Ts);
+    printLine();
+    printf(" Number of data points :  %11i\r\n", NmeasTotal);
+    printf(" Measurment time in sec: %12.2f\r\n", (float)NmeasTotal * Ts);
 }
 
 void GPA::printNfexcDes()
 {
-    printf(" Number of frequancy points:   %3i\n", NfexcDes);
+    printLine();
+    printf("  Number of frequancy points:  %3i\r\n", NfexcDes);
 }
 
-void GPA::printPrecalcParam()
+void GPA::printLine()
 {
-    printf(" Number of actual frequancy points:   %3i\n", NfexcAct);
-    for(int i = 0; i < NfexcAct; i++) printf(" %6i %6i %9.3e %9.3e\n", Nper_vec[i], Nmeas_vec[i], fexc_vec[i], Aexc_vec[i]);
+    printf("--------------------------------------------------------------------------------\r\n");
 }
 
-GPA::gpadata_t GPA::getGPAdata()
+void GPA::getGPAdata(float *val)
 {
-    return gpaData;
+    val[0] = gpaData.fexc;
+    val[1] = gpaData.absGyu;
+    val[2] = gpaData.angGyu;
+    val[3] = gpaData.absGyr;
+    val[4] = gpaData.angGyr;
+    val[5] = gpaData.Umag;
+    val[6] = gpaData.Ymag;
+    val[7] = gpaData.Rmag;
+    new_data_available = false;
 }

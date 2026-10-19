@@ -1,21 +1,38 @@
+#include "DataLogger.h"
+#include "GPA.h"
 #include "IO_handler.h"
 #include "mbed.h"
 #include "realtime_thread.h"
+#include "uart_comm_thread_receive.h"
+#include "uart_comm_thread_send.h"
 
-// Note:
-// - You find the compiled firmware in the firmware folder. Make sure to update the firmware if you make changes to the code.
+// IMPORTANT:
+// - Do NOT set the BufferedSerial to non-blocking mode, as this will break proper communication!
+
+float Ts = 1.0f / 1.0e3f;
+float Ts_fast = 50.0e-6f; // existing 20 kHz current controller
+GPA myGPA(1.0f, 245.0f, 30, 0.1f, 0.2f, Ts); // prepared for realtime_thread; update/excitation are commented out
+DataLogger myDataLogger(1);
 
 int main()
 {
-    // Input-Output handler
+    // Input/Output handling
     IO_handler io_handler;
 
-    // Real-time thread with sampling time Ts
-    float Ts = 200.0e-6f;
-    float Ts_fast = 50.0e-6f;
-    realtime_thread rt_thread(io_handler, Ts, Ts_fast);
+    // Communication: MATLAB app only; no Simulink current-command exchange.
+    BufferedSerial uart_serial(USBTX, USBRX, 115200);                     // leave this blocking!
+    uart_comm_thread_send uart_com_send(&io_handler, &uart_serial, .01f); // send communication thread
+    uart_comm_thread_receive uart_com_receive(&uart_serial, .01f);        // receive communication thread
+
+    // Real-Time Thread
+    realtime_thread rt_thread(&io_handler, Ts, Ts_fast);
+
+    // Start the communication and control threads.
+    uart_com_receive.start_uart();
+    uart_com_send.start_uart();
     rt_thread.start_loop();
 
-    while (true)
+    while (true) {
         ThisThread::sleep_for(500ms);
+    }
 }
