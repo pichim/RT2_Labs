@@ -2,6 +2,8 @@
 #include "uart_comm_thread_receive.h"
 
 #include <cstdint>
+#include <cstring>
+#include <cmath>
 
 extern DataLogger myDataLogger;
 extern GPA myGPA;
@@ -43,6 +45,7 @@ void uart_comm_thread_receive::recoverFromReadError(char newByte)
         bool isTerminatorReceived = (prevByte0 == UART_TERM_BY0 && newByte == UART_TERM_BY1);
         if (isTerminatorReceived) {
             messageBufIndex = 0;
+            currentMessageDataSize = -1;
             isCsmErrorFlag = false;
             recovery_count = 0;
         } else {
@@ -54,6 +57,7 @@ void uart_comm_thread_receive::recoverFromReadError(char newByte)
                 messageBuffer[1] = UART_HEAD_BY1;
                 messageBuffer[2] = UART_HEAD_BY2;
                 messageBufIndex = 3;
+                currentMessageDataSize = -1;
                 isCsmErrorFlag = false;
                 recovery_count = 0;
             }
@@ -114,7 +118,7 @@ void uart_comm_thread_receive::checkMessageBufferHeader()
 {
     bool headerValid =
         messageBuffer[0] == UART_HEAD_BY0 && messageBuffer[1] == UART_HEAD_BY1 && messageBuffer[2] == UART_HEAD_BY2;
-    isCsmErrorFlag = true;
+    isCsmErrorFlag = !headerValid;
     head_err_cnt += !headerValid;
     if (!headerValid) {
         // m_data->debug_var[2] = (float) receive_cnt;
@@ -123,8 +127,12 @@ void uart_comm_thread_receive::checkMessageBufferHeader()
 
 int uart_comm_thread_receive::parseMessageBufferDataSize()
 {
-    uint16_t dataSize = 256 * messageBuffer[6] + messageBuffer[5];
-    dataSize = min(dataSize, (uint16_t)UART_DATA_LEN);
+    uint16_t dataSize = (static_cast<uint8_t>(messageBuffer[6]) << 8)
+        | static_cast<uint8_t>(messageBuffer[5]);
+    if (dataSize > messageBufLen - UART_HEAD_LEN - UART_TAIL_LEN) {
+        isCsmErrorFlag = true;
+        return -1;
+    }
     return dataSize;
 }
 
@@ -132,13 +140,15 @@ bool uart_comm_thread_receive::verifyChecksumValid(uint16_t dataSize)
 {
     char csm_calc = 0;
     bool csm_valid = false;
-    if (dataSize > 0 && dataSize <= UART_DATA_LEN) {
+    if (dataSize > 0 && dataSize <= messageBufLen - UART_HEAD_LEN - UART_TAIL_LEN) {
         uint32_t csm_len = UART_HEAD_LEN + dataSize;
         if (csm_len < UART_BUF_LEN) {
             for (uint32_t i = 0; i < csm_len; i++) {
                 csm_calc += messageBuffer[i];
             }
-            csm_valid = csm_calc == messageBuffer[csm_len];
+            csm_valid = csm_calc == messageBuffer[csm_len]
+                && messageBuffer[csm_len + 1] == UART_TERM_BY0
+                && messageBuffer[csm_len + 2] == UART_TERM_BY1;
         }
     }
     return csm_valid;
@@ -149,10 +159,12 @@ bool uart_comm_thread_receive::verifyChecksumValid(uint16_t dataSize)
 bool uart_comm_thread_receive::parseMessageBuffer(int i)
 {
     receive_cnt++;
-    char msg_id1 = messageBuffer[3];
-    char msg_id2 = messageBuffer[4];
-    uint16_t N = 256 * messageBuffer[6] + messageBuffer[5];
+    uint8_t msg_id1 = static_cast<uint8_t>(messageBuffer[3]);
+    uint8_t msg_id2 = static_cast<uint8_t>(messageBuffer[4]);
+    uint16_t N = (static_cast<uint8_t>(messageBuffer[6]) << 8)
+        | static_cast<uint8_t>(messageBuffer[5]);
     float f0, f1, A0, A1;
+    float amp, omega, offset;
     // char stri[20];
     uint8_t Nmeas;
     if (!verifyChecksumValid(N)) {
@@ -166,12 +178,20 @@ bool uart_comm_thread_receive::parseMessageBuffer(int i)
         case 210:
             switch (msg_id2) {
                 case 101: // receive start signal and Amp, Freq, offset values
+                    if (N != 14 || static_cast<uint8_t>(messageBuffer[7]) < 1
+                        || static_cast<uint8_t>(messageBuffer[7]) > 3 || static_cast<uint8_t>(messageBuffer[20]) == 0)
+                        return false;
+                    memcpy(&amp, &messageBuffer[8], sizeof(float));
+                    memcpy(&omega, &messageBuffer[12], sizeof(float));
+                    memcpy(&offset, &messageBuffer[16], sizeof(float));
+                    if (!std::isfinite(amp) || !std::isfinite(omega) || !std::isfinite(offset) || omega <= 0.0f)
+                        return false;
                     if (myDataLogger.log_status == 1) {
                         myDataLogger.reset_data();
                         myDataLogger.input_type = (uint8_t)messageBuffer[7];
-                        myDataLogger.Amp = *(float *)&messageBuffer[8];
-                        myDataLogger.omega = *(float *)&messageBuffer[12];
-                        myDataLogger.offset = *(float *)&messageBuffer[16];
+                        myDataLogger.Amp = amp;
+                        myDataLogger.omega = omega;
+                        myDataLogger.offset = offset;
                         myDataLogger.downsamp = (uint8_t)messageBuffer[20];
                         myDataLogger.log_status = 2;
                     }
@@ -180,19 +200,16 @@ bool uart_comm_thread_receive::parseMessageBuffer(int i)
             break; // case 210
         case 250:
             switch (msg_id2) {
-                case 101: // start GPA xternally
-                    if (true) {
-                        myGPA.reset();
-                        f0 = *(float *)&messageBuffer[7];
-                        f1 = *(float *)&messageBuffer[11];
-                        A0 = *(float *)&messageBuffer[15];
-                        A1 = *(float *)&messageBuffer[19];
-                        Nmeas = (uint8_t)messageBuffer[23];
-                        myGPA.setup(f0, f1, (int)Nmeas, A0, A1, myGPA.get_Ts());
-                        // sprintf (stri, "Start GPA, N: %d",Nmeas);
-                        // send_text((char *)"Started GPA");
+                case 101: // four floats and number of frequency points; no motor/type selection
+                    if (N != 17)
+                        return false;
+                    memcpy(&f0, &messageBuffer[7], sizeof(float));
+                    memcpy(&f1, &messageBuffer[11], sizeof(float));
+                    memcpy(&A0, &messageBuffer[15], sizeof(float));
+                    memcpy(&A1, &messageBuffer[19], sizeof(float));
+                    Nmeas = static_cast<uint8_t>(messageBuffer[23]);
+                    if (myGPA.setup(f0, f1, (int)Nmeas, A0, A1, myGPA.get_Ts()))
                         myGPA.status = 2;
-                    }
                     break;
             }
             break; // case 250

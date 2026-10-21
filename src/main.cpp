@@ -24,9 +24,9 @@ int main()
     IO_handler io_handler;
 
     // Communication
-    BufferedSerial uart_serial(USBTX, USBRX, 115200);                   // leave this blocking!
+    BufferedSerial uart_serial(USBTX, USBRX, 115200);                     // leave this blocking!
     uart_comm_thread_send uart_com_send(&io_handler, &uart_serial, .01f); // send communication thread
-    uart_comm_thread_receive uart_com_receive(&uart_serial, .01f);      // receive communication thread
+    uart_comm_thread_receive uart_com_receive(&uart_serial, .01f);        // receive communication thread
 
     // Real-Time Thread
     realtime_thread rt_thread(&io_handler, Ts);

@@ -7,17 +7,18 @@ class GPA
 public:
     typedef struct GPADATA {
         float fexc;
-        float absGyu;
-        float angGyu;
-        float absGyr;
-        float angGyr;
-        float Umag;
-        float Ymag;
-        float Rmag;
+        float Ureal;
+        float Uimag;
+        float Yreal;
+        float Yimag;
+        float Rreal;
+        float Rimag;
         bool MeasPointFinished;
         bool MeasFinished;
         int ind;
     } gpadata_t;
+
+    static const uint8_t MAX_FREQUENCY_POINTS = 100;
 
     GPA() {};
     GPA(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts);
@@ -62,12 +63,12 @@ public:
         int Nstart,
         int Nsweep,
         bool doPrint);
-    void setup(float, float, int, float, float, float);
+    bool setup(float, float, int, float, float, float);
     float operator()(float inp, float out) { return update(inp, out); }
 
     virtual ~GPA();
 
-    void setParameters(float fMin,
+    bool setParameters(float fMin,
                        float fMax,
                        int NfexcDes,
                        int NperMin,
@@ -90,17 +91,17 @@ public:
     float get_Ts();
     uint8_t get_i();
     void getGPAdata(float *);
-    bool new_data_available;
-    bool meas_is_finished;
-    bool start_now;
-    int status;
+    bool new_data_available = false;
+    bool meas_is_finished = false;
+    bool start_now = false;
+    int status = 0;
 
 private:
-    int NfexcDes;
+    int NfexcDes = 0;
     int NperMin;
     int NmeasMin;
-    float Ts;
-    float *fexcDes;
+    float Ts = 0.0f;
+    float fexcDes[MAX_FREQUENCY_POINTS] = {};
     float aAexcDes;
     float bAexcDes;
 
@@ -124,8 +125,8 @@ private:
     double scaleG;
     double cr;
     double ci;
-    double *sU;
-    double *sY;
+    double sU[3] = {};
+    double sY[3] = {};
     double sinarg;
     float sinargR;
     int NmeasTotal;
@@ -144,7 +145,7 @@ private:
     void assignParameters(int NfexcDes, int NperMin, int NmeasMin, float Ts, int Nstart, int Nsweep);
     void calculateDecreasingAmplitudeCoefficients(float Aexc0, float Aexc1);
     void initializeConstants(float Ts);
-    void assignFilterStorage();
+    bool validParameters(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts);
     void fexcDesLogspace(float fMin, float fMax, int NfexcDes);
     void calcGPAmeasPara(float fexcDes_i);
     float wrapAngle(float angle);

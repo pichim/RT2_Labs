@@ -1,4 +1,4 @@
-# RCRC Mbed
+# RCRC
 
 RCRC Mbed Project for the course Control Systems 2.
 

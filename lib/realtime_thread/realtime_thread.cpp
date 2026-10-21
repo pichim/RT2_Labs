@@ -101,6 +101,7 @@ void realtime_thread::loop(void)
         // --- P1, AUFGABE 1.8 ---
         // GPA - do not overwrite exc if you want to excite via the GPA
         // m_IO_handler->write_aout(exc); // write to analog output
+        // First argument is U: use exc for excitation-to-output, or u for plant-input-to-output.
         exc = myGPA.update(exc, y2); // GPA calculates future excitation exc(k+1)
     }
 }
