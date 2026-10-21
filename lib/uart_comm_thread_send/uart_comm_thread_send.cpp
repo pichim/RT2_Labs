@@ -43,10 +43,10 @@ void uart_comm_thread_send::loop(void)
 
 void uart_comm_thread_send::send_gpa_data(void)
 {
-    float dum[8];
+    float dum[7];
     if (myGPA.new_data_available) {
         myGPA.getGPAdata(dum);
-        send(250, 1, 32, (char *)&(dum[0])); // send new values (8 floats)
+        send(250, 1, sizeof(dum), (char *)&(dum[0])); // frequency, real/imag of U, Y and R
     } else if (myGPA.start_now) {
         char dum = 0;
         send(250, 2, 1, &dum); // send start flag
@@ -150,7 +150,7 @@ void uart_comm_thread_send::start_uart(void)
 void uart_comm_thread_send::sendThreadFlag() { thread.flags_set(threadFlag); }
 
 // ---------------------  send N char data --------------------------------------
-void uart_comm_thread_send::send(uint8_t id1, uint8_t id2, uint16_t N, char *m)
+void uart_comm_thread_send::send(uint8_t id1, uint8_t id2, uint16_t N, const char *m)
 {
     char buffer[7], csm_tail[3] = {0, '\r', '\n'};
     /* Add header */
@@ -161,8 +161,9 @@ void uart_comm_thread_send::send(uint8_t id1, uint8_t id2, uint16_t N, char *m)
     buffer[3] = id1;
     buffer[4] = id2;
     /* Add number of bytes*/
-    *(uint16_t *)&buffer[5] = N; // cast targt to appropriate data type
-                                 /* send header */
+    buffer[5] = N & 0xff;
+    buffer[6] = N >> 8;
+    /* send header */
     uart->write(buffer, 7);
     for (int i = 0; i < 7; ++i)
         csm_tail[0] += buffer[i];
@@ -177,18 +178,7 @@ void uart_comm_thread_send::send(uint8_t id1, uint8_t id2, uint16_t N, char *m)
 void uart_comm_thread_send::send_text(const char *txt)
 {
     uint16_t N = 0;
-    char buffer[40];
     while (txt[N] != 0) // get length of text
         N++;
-    buffer[0] = 254;
-    buffer[1] = 1;
-    buffer[2] = 255; // standard pattern
-    buffer[3] = 241;
-    buffer[4] = 1;
-    buffer[5] = N % 256;
-    buffer[6] = N / 256;
-    uart->write(buffer, 7);
-    uart->write(txt, N);
-    char dum = 0;
-    uart->write(&dum, 1); // line end
+    send(241, 1, N, txt);
 }

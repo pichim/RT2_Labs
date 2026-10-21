@@ -2,60 +2,55 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        NucleoconnectionUIFigure  matlab.ui.Figure
-        IOValuesPanel             matlab.ui.container.Panel
-        GzAvgEditField            matlab.ui.control.NumericEditField
-        GzAvgEditFieldLabel       matlab.ui.control.Label
-        AyAvgEditField            matlab.ui.control.NumericEditField
-        AyAvgEditFieldLabel       matlab.ui.control.Label
-        AxAvgEditField            matlab.ui.control.NumericEditField
-        AxAvgEditFieldLabel       matlab.ui.control.Label
-        IdType1plantcl2plantol3posplantclLabel  matlab.ui.control.Label
-        GPAPanel                  matlab.ui.container.Panel
-        gpa_meas_startButton      matlab.ui.control.Button
-        GPA_IdType                matlab.ui.control.NumericEditField
-        IdtypeLabel               matlab.ui.control.Label
-        GPA_MotNb                 matlab.ui.control.NumericEditField
-        MotNb1or2Label            matlab.ui.control.Label
-        GPA_N                     matlab.ui.control.NumericEditField
-        NLabel                    matlab.ui.control.Label
-        GPA_A1                    matlab.ui.control.NumericEditField
-        A1Label                   matlab.ui.control.Label
-        GPA_A0                    matlab.ui.control.NumericEditField
-        A0Label                   matlab.ui.control.Label
-        GPA_f0                    matlab.ui.control.NumericEditField
-        f0Label                   matlab.ui.control.Label
-        GPA_f1                    matlab.ui.control.NumericEditField
-        f1Label                   matlab.ui.control.Label
-        VarNameEditField          matlab.ui.control.EditField
-        VarNameEditFieldLabel     matlab.ui.control.Label
-        GPAtext                   matlab.ui.control.TextArea
-        GPAonLamp                 matlab.ui.control.Lamp
-        OnLabel                   matlab.ui.control.Label
-        TxtOutput                 matlab.ui.control.TextArea
-        TimemeasuresPanel         matlab.ui.container.Panel
-        HzLabel                   matlab.ui.control.Label
-        DwnsampEditField          matlab.ui.control.NumericEditField
-        DwnsampEditFieldLabel     matlab.ui.control.Label
-        OffsetEditField           matlab.ui.control.NumericEditField
-        OffsetEditFieldLabel      matlab.ui.control.Label
-        FreqEditField             matlab.ui.control.NumericEditField
-        FreqEditFieldLabel        matlab.ui.control.Label
-        AmpEditField              matlab.ui.control.NumericEditField
-        AmpEditFieldLabel         matlab.ui.control.Label
-        TypeDropDown              matlab.ui.control.DropDown
-        TypeDropDownLabel         matlab.ui.control.Label
-        VarNameEditField_ti       matlab.ui.control.EditField
-        VarNameEditField_2Label   matlab.ui.control.Label
-        timeMeasstartButton       matlab.ui.control.Button
-        connectionLabel           matlab.ui.control.Label
-        BREditField               matlab.ui.control.NumericEditField
-        BREditFieldLabel          matlab.ui.control.Label
-        COMPortsListBox           matlab.ui.control.ListBox
-        COMPortsLabel             matlab.ui.control.Label
-        V20Label                  matlab.ui.control.Label
-        ConnectButton             matlab.ui.control.Button
-        SearchCOMPortsButton      matlab.ui.control.Button
+        NucleoconnectionUIFigure    matlab.ui.Figure
+        IOValuesPanel               matlab.ui.container.Panel
+        GzAvgEditField              matlab.ui.control.NumericEditField
+        GzAvgEditFieldLabel         matlab.ui.control.Label
+        AyAvgEditField              matlab.ui.control.NumericEditField
+        AyAvgEditFieldLabel         matlab.ui.control.Label
+        AxAvgEditField              matlab.ui.control.NumericEditField
+        AxAvgEditFieldLabel         matlab.ui.control.Label
+        GPAPanel                    matlab.ui.container.Panel
+        gpa_meas_startButton        matlab.ui.control.Button
+        GPA_N                       matlab.ui.control.NumericEditField
+        NLabel                      matlab.ui.control.Label
+        GPA_A1                      matlab.ui.control.NumericEditField
+        A1Label                     matlab.ui.control.Label
+        GPA_A0                      matlab.ui.control.NumericEditField
+        A0Label                     matlab.ui.control.Label
+        GPA_f0                      matlab.ui.control.NumericEditField
+        f0Label                     matlab.ui.control.Label
+        GPA_f1                      matlab.ui.control.NumericEditField
+        f1Label                     matlab.ui.control.Label
+        VarNameEditField            matlab.ui.control.EditField
+        VarNameEditFieldLabel       matlab.ui.control.Label
+        GPAtext                     matlab.ui.control.TextArea
+        GPAonLamp                   matlab.ui.control.Lamp
+        OnLabel                     matlab.ui.control.Label
+        TxtOutput                   matlab.ui.control.TextArea
+        TimemeasuresPanel           matlab.ui.container.Panel
+        HzLabel                     matlab.ui.control.Label
+        DownsamplingEditField       matlab.ui.control.NumericEditField
+        DownsamplingEditFieldLabel  matlab.ui.control.Label
+        OffsetEditField             matlab.ui.control.NumericEditField
+        OffsetEditFieldLabel        matlab.ui.control.Label
+        FreqEditField               matlab.ui.control.NumericEditField
+        FreqEditFieldLabel          matlab.ui.control.Label
+        AmpEditField                matlab.ui.control.NumericEditField
+        AmpEditFieldLabel           matlab.ui.control.Label
+        TypeDropDown                matlab.ui.control.DropDown
+        TypeDropDownLabel           matlab.ui.control.Label
+        VarNameEditField_ti         matlab.ui.control.EditField
+        TimeseriesNameLabel         matlab.ui.control.Label
+        timeMeasstartButton         matlab.ui.control.Button
+        connectionLabel             matlab.ui.control.Label
+        baudEditField               matlab.ui.control.NumericEditField
+        baudEditFieldLabel          matlab.ui.control.Label
+        COMPortsListBox             matlab.ui.control.ListBox
+        COMPortsLabel               matlab.ui.control.Label
+        V30Label                    matlab.ui.control.Label
+        ConnectButton               matlab.ui.control.Button
+        SearchCOMPortsButton        matlab.ui.control.Button
     end
 
 
@@ -191,7 +186,7 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
 
         % Button pushed function: ConnectButton
         function ConnectButtonPushed(app, event)
-            app.baudRate=app.BREditField.Value;
+            app.baudRate=app.baudEditField.Value;
             serialCallback = @(~,~)app.getValuesUART;
             if ((app.baudRate > 0) & (~app.flagPortConnect))
                 app.serialPort = serialport(app.selectedComPort,app.baudRate,"Timeout",3);
@@ -214,7 +209,7 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
                 SearchCOMPortsButtonPushed(app,event);
                 app.flagPortConnect = false;
                 app.connectionLabel.Text = "Not Connected";
-                app.ConnectButton.Text = "Connected";
+                app.ConnectButton.Text = "Connect";
                 app.SearchCOMPortsButton.Enable = 'on';
 
             end
@@ -226,13 +221,13 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             app.flagPortSelect = true;
         end
 
-        % Value changed function: BREditField
-        function BREditFieldValueChanged(app, event)
-            if app.BREditField.Value < 0 % evtl druch Dropdownliste ersetzten
+        % Value changed function: baudEditField
+        function baudEditFieldValueChanged(app, event)
+            if app.baudEditField.Value < 0 % evtl druch Dropdownliste ersetzten
                 app.baudRate = 0;
-                app.BREditField.Value = 0;
-            elseif app.BREditField.Value > 0
-                app.baudRate = app.BREditField.Value;
+                app.baudEditField.Value = 0;
+            elseif app.baudEditField.Value > 0
+                app.baudRate = app.baudEditField.Value;
             end
         end
 
@@ -403,22 +398,39 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
                                     end
                                 case 250
                                     switch app.loc_data(k).id2
-                                        case 1  % get data
+                                        case 1  % seven floats: frequency, real/imag of U, Y and R
                                             try
+                                                if app.loc_data(k).N_bytes ~= 28
+                                                    error('GPA:Data', 'Expected 28 GPA bytes. Update firmware and GUI together.');
+                                                end
                                                 val = double(typecast(uint8(app.loc_data(k).grab), 'single'))';
                                                 app.GPA_i = app.GPA_i+1;
                                                 app.GPA_data(app.GPA_i,:)=val;
                                                 %disp('received')
                                                 app.GPAtext.Value = sprintf('Rec. val. @ %4.2f Hz',val(1));
                                                 app.GPAonLamp.Color =[0.93,0.69,0.13];
-                                            catch
-                                                warning('Error in communication');
+                                            catch ME
+                                                warning('UART:Receive', '%s', ME.message);
                                                 %disp(head)
                                                 %disp(dat(1:end-2))
                                             end
                                         case 255  % meas finished
                                             assignin('base','GPA_data',app.GPA_data)
-                                            G = frd(app.GPA_data(:,2).*exp(1i*app.GPA_data(:,3)*pi/180), app.GPA_data(:,1), 'FrequencyUnit', 'Hz');
+                                            % Columns: frequency, real/imag of U, Y and R.
+                                            if isempty(app.GPA_data) || size(app.GPA_data,2) ~= 7 || any(~isfinite(app.GPA_data), 'all')
+                                                error('GPA:Data', 'GPA transfer functions need nonempty, finite seven-column data.');
+                                            end
+                                            U = app.GPA_data(:,2) + 1i*app.GPA_data(:,3);
+                                            Y = app.GPA_data(:,4) + 1i*app.GPA_data(:,5);
+                                            R = app.GPA_data(:,6) + 1i*app.GPA_data(:,7);
+                                            if any(U == 0) || any(R == 0)
+                                                error('GPA:Data', 'GPA transfer functions are undefined: zero U or R.');
+                                            end
+                                            Gur = frd(U ./ R, app.GPA_data(:,1), 'FrequencyUnit', 'Hz');
+                                            Gyr = frd(Y ./ R, app.GPA_data(:,1), 'FrequencyUnit', 'Hz');
+                                            G = Gyr / Gur; % Gyu; U is the signal passed to GPA in firmware.
+                                            assignin('base','Gur',Gur)
+                                            assignin('base','Gyr',Gyr)
                                             assignin('base',app.VarNameEditField.Value,G)
                                             app.GPAtext.Value = sprintf('Frd with %d pts in WS',size(app.GPA_data,1));
                                             app.GPAonLamp.Color =[0 1 0];
@@ -435,7 +447,8 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
                     end
                 end
             catch ME
-                4;
+                warning('UART:Receive', '%s', ME.message);
+                addmessage(app, {ME.message});
             end
         end
 
@@ -443,15 +456,32 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
         function timeMeasstartButtonPushed(app, event)
             va = find(strcmp(app.TypeDropDown.Items,app.TypeDropDown.Value));
             dat = [typecast(uint8(va),'uint8') typecast(single(app.AmpEditField.Value),'uint8') ...
-                typecast(single(app.FreqEditField.Value*2*pi),'uint8') typecast(single(app.OffsetEditField.Value),'uint8') typecast(uint8(app.DwnsampEditField.Value),'uint8')];
+                typecast(single(app.FreqEditField.Value*2*pi),'uint8') typecast(single(app.OffsetEditField.Value),'uint8') typecast(uint8(app.DownsamplingEditField.Value),'uint8')];
             sendCommand(app,[210 101],dat);
         end
 
         % Button pushed function: gpa_meas_startButton
         function gpa_meas_startButtonPushed(app, event)
+            values = double(single([app.GPA_f0.Value app.GPA_f1.Value app.GPA_A0.Value app.GPA_A1.Value app.GPA_N.Value]));
+            if any(~isfinite(values)) || any(values(1:4) <= 0) || values(1) >= values(2) ...
+                    || values(5) < 2 || values(5) > 100 || values(5) ~= round(values(5))
+                addmessage(app, {'GPA: use 2-100 points, positive amplitudes and 0 < f0 < f1.'});
+                return
+            end
+            inverse_span = single(1)/single(values(2)) - single(1)/single(values(1));
+            if inverse_span == 0 || ~isfinite(inverse_span)
+                addmessage(app, {'GPA: frequency limits are too close for single precision.'});
+                return
+            end
+            a = (single(values(4))-single(values(3))) / inverse_span;
+            b = single(values(3)) - a/single(values(1));
+            if ~isfinite(a) || ~isfinite(b)
+                addmessage(app, {'GPA: amplitudes/frequency limits exceed single precision.'});
+                return
+            end
+            % Firmware also checks its sampling-dependent Nyquist limit.
             dat = [typecast(single(app.GPA_f0.Value),'uint8') typecast(single(app.GPA_f1.Value),'uint8')...
-                typecast(single(app.GPA_A0.Value),'uint8') typecast(single(app.GPA_A1.Value),'uint8') typecast(uint8(app.GPA_N.Value),'uint8')...
-                typecast(uint8(app.GPA_MotNb.Value-1),'uint8') typecast(uint8(app.GPA_IdType.Value),'uint8')];
+                typecast(single(app.GPA_A0.Value),'uint8') typecast(single(app.GPA_A1.Value),'uint8') typecast(uint8(app.GPA_N.Value),'uint8')];
             sendCommand(app,[250 101],dat);
         end
 
@@ -471,9 +501,8 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             % Create NucleoconnectionUIFigure and hide until all components are created
             app.NucleoconnectionUIFigure = uifigure('Visible', 'off');
             colormap(app.NucleoconnectionUIFigure, 'parula');
-            app.NucleoconnectionUIFigure.Position = [300 300 652 334];
+            app.NucleoconnectionUIFigure.Position = [300 300 694 334];
             app.NucleoconnectionUIFigure.Name = 'Nucleo connection';
-            app.NucleoconnectionUIFigure.Icon = 'nuc.jpg';
             app.NucleoconnectionUIFigure.CloseRequestFcn = createCallbackFcn(app, @NucleoconnectionUIFigureCloseRequest, true);
 
             % Create SearchCOMPortsButton
@@ -489,11 +518,11 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             app.ConnectButton.Position = [184 198 86 23];
             app.ConnectButton.Text = 'Connect';
 
-            % Create V20Label
-            app.V20Label = uilabel(app.NucleoconnectionUIFigure);
-            app.V20Label.FontColor = [0.651 0.651 0.651];
-            app.V20Label.Position = [12 1 30 22];
-            app.V20Label.Text = 'V2.0';
+            % Create V30Label
+            app.V30Label = uilabel(app.NucleoconnectionUIFigure);
+            app.V30Label.FontColor = [0.651 0.651 0.651];
+            app.V30Label.Position = [12 1 30 22];
+            app.V30Label.Text = 'V3.0';
 
             % Create COMPortsLabel
             app.COMPortsLabel = uilabel(app.NucleoconnectionUIFigure);
@@ -505,61 +534,61 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             app.COMPortsListBox = uilistbox(app.NucleoconnectionUIFigure);
             app.COMPortsListBox.Items = {};
             app.COMPortsListBox.ValueChangedFcn = createCallbackFcn(app, @COMPortsListBoxValueChanged, true);
-            app.COMPortsListBox.Position = [50 232 108 92];
+            app.COMPortsListBox.Position = [50 232 123 92];
             app.COMPortsListBox.Value = {};
 
-            % Create BREditFieldLabel
-            app.BREditFieldLabel = uilabel(app.NucleoconnectionUIFigure);
-            app.BREditFieldLabel.HorizontalAlignment = 'right';
-            app.BREditFieldLabel.Position = [230 301 25 22];
-            app.BREditFieldLabel.Text = 'BR';
+            % Create baudEditFieldLabel
+            app.baudEditFieldLabel = uilabel(app.NucleoconnectionUIFigure);
+            app.baudEditFieldLabel.HorizontalAlignment = 'right';
+            app.baudEditFieldLabel.Position = [231 301 32 22];
+            app.baudEditFieldLabel.Text = 'baud';
 
-            % Create BREditField
-            app.BREditField = uieditfield(app.NucleoconnectionUIFigure, 'numeric');
-            app.BREditField.Limits = [0 2560000];
-            app.BREditField.ValueDisplayFormat = '%.0f';
-            app.BREditField.ValueChangedFcn = createCallbackFcn(app, @BREditFieldValueChanged, true);
-            app.BREditField.Position = [169 301 52 22];
-            app.BREditField.Value = 115200;
+            % Create baudEditField
+            app.baudEditField = uieditfield(app.NucleoconnectionUIFigure, 'numeric');
+            app.baudEditField.Limits = [0 2560000];
+            app.baudEditField.ValueDisplayFormat = '%.0f';
+            app.baudEditField.ValueChangedFcn = createCallbackFcn(app, @baudEditFieldValueChanged, true);
+            app.baudEditField.Position = [180 301 54 22];
+            app.baudEditField.Value = 115200;
 
             % Create connectionLabel
             app.connectionLabel = uilabel(app.NucleoconnectionUIFigure);
-            app.connectionLabel.Position = [170 261 100 22];
+            app.connectionLabel.Position = [184 232 100 22];
             app.connectionLabel.Text = '---';
 
             % Create TimemeasuresPanel
             app.TimemeasuresPanel = uipanel(app.NucleoconnectionUIFigure);
             app.TimemeasuresPanel.Title = 'Time measures';
-            app.TimemeasuresPanel.Position = [293 27 198 159];
+            app.TimemeasuresPanel.Position = [293 27 246 159];
 
             % Create timeMeasstartButton
             app.timeMeasstartButton = uibutton(app.TimemeasuresPanel, 'push');
             app.timeMeasstartButton.ButtonPushedFcn = createCallbackFcn(app, @timeMeasstartButtonPushed, true);
-            app.timeMeasstartButton.Position = [151 82 40 23];
+            app.timeMeasstartButton.Position = [191 83 40 23];
             app.timeMeasstartButton.Text = 'Start';
 
-            % Create VarNameEditField_2Label
-            app.VarNameEditField_2Label = uilabel(app.TimemeasuresPanel);
-            app.VarNameEditField_2Label.HorizontalAlignment = 'right';
-            app.VarNameEditField_2Label.Position = [39 7 70 22];
-            app.VarNameEditField_2Label.Text = 'VarName';
+            % Create TimeseriesNameLabel
+            app.TimeseriesNameLabel = uilabel(app.TimemeasuresPanel);
+            app.TimeseriesNameLabel.HorizontalAlignment = 'right';
+            app.TimeseriesNameLabel.Position = [59 8 99 22];
+            app.TimeseriesNameLabel.Text = 'Timeseries Name';
 
             % Create VarNameEditField_ti
             app.VarNameEditField_ti = uieditfield(app.TimemeasuresPanel, 'text');
             app.VarNameEditField_ti.ValueChangedFcn = createCallbackFcn(app, @VarNameEditField_tiValueChanged, true);
-            app.VarNameEditField_ti.Position = [132 7 59 22];
+            app.VarNameEditField_ti.Position = [172 8 59 22];
             app.VarNameEditField_ti.Value = 'data';
 
             % Create TypeDropDownLabel
             app.TypeDropDownLabel = uilabel(app.TimemeasuresPanel);
             app.TypeDropDownLabel.HorizontalAlignment = 'right';
-            app.TypeDropDownLabel.Position = [15 112 32 22];
+            app.TypeDropDownLabel.Position = [60 111 32 22];
             app.TypeDropDownLabel.Text = 'Type';
 
             % Create TypeDropDown
             app.TypeDropDown = uidropdown(app.TimemeasuresPanel);
             app.TypeDropDown.Items = {'Step Sequence', 'Sine Wave', 'ZigZag'};
-            app.TypeDropDown.Position = [62 112 128 22];
+            app.TypeDropDown.Position = [101 112 130 22];
             app.TypeDropDown.Value = 'Step Sequence';
 
             % Create AmpEditFieldLabel
@@ -596,17 +625,17 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             app.OffsetEditField.Limits = [-1000 1000];
             app.OffsetEditField.Position = [60 33 38 22];
 
-            % Create DwnsampEditFieldLabel
-            app.DwnsampEditFieldLabel = uilabel(app.TimemeasuresPanel);
-            app.DwnsampEditFieldLabel.HorizontalAlignment = 'right';
-            app.DwnsampEditFieldLabel.Position = [105 33 59 22];
-            app.DwnsampEditFieldLabel.Text = 'Dwnsamp';
+            % Create DownsamplingEditFieldLabel
+            app.DownsamplingEditFieldLabel = uilabel(app.TimemeasuresPanel);
+            app.DownsamplingEditFieldLabel.HorizontalAlignment = 'right';
+            app.DownsamplingEditFieldLabel.Position = [121 33 84 22];
+            app.DownsamplingEditFieldLabel.Text = 'Downsampling';
 
-            % Create DwnsampEditField
-            app.DwnsampEditField = uieditfield(app.TimemeasuresPanel, 'numeric');
-            app.DwnsampEditField.Limits = [1 50];
-            app.DwnsampEditField.Position = [167 33 23 22];
-            app.DwnsampEditField.Value = 5;
+            % Create DownsamplingEditField
+            app.DownsamplingEditField = uieditfield(app.TimemeasuresPanel, 'numeric');
+            app.DownsamplingEditField.Limits = [1 50];
+            app.DownsamplingEditField.Position = [208 33 23 22];
+            app.DownsamplingEditField.Value = 5;
 
             % Create HzLabel
             app.HzLabel = uilabel(app.TimemeasuresPanel);
@@ -619,7 +648,7 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             app.TxtOutput.FontSize = 11;
             app.TxtOutput.FontColor = [0 1 0];
             app.TxtOutput.BackgroundColor = [0 0 0];
-            app.TxtOutput.Position = [293 198 349 126];
+            app.TxtOutput.Position = [293 198 387 126];
             app.TxtOutput.Value = {'Nucleo Communication'; '--------------------'};
 
             % Create GPAPanel
@@ -630,12 +659,12 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             % Create OnLabel
             app.OnLabel = uilabel(app.GPAPanel);
             app.OnLabel.HorizontalAlignment = 'right';
-            app.OnLabel.Position = [8 64 25 22];
+            app.OnLabel.Position = [10 82 25 22];
             app.OnLabel.Text = 'On';
 
             % Create GPAonLamp
             app.GPAonLamp = uilamp(app.GPAPanel);
-            app.GPAonLamp.Position = [48 64 20 20];
+            app.GPAonLamp.Position = [50 82 20 20];
             app.GPAonLamp.Color = [0.8 0.8 0.8];
 
             % Create GPAtext
@@ -648,117 +677,85 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             % Create VarNameEditFieldLabel
             app.VarNameEditFieldLabel = uilabel(app.GPAPanel);
             app.VarNameEditFieldLabel.HorizontalAlignment = 'right';
-            app.VarNameEditFieldLabel.Position = [12 85 70 22];
-            app.VarNameEditFieldLabel.Text = 'VarName';
+            app.VarNameEditFieldLabel.Position = [22 51 70 22];
+            app.VarNameEditFieldLabel.Text = 'Gyu Name';
 
             % Create VarNameEditField
             app.VarNameEditField = uieditfield(app.GPAPanel, 'text');
-            app.VarNameEditField.Position = [105 85 63 22];
+            app.VarNameEditField.Position = [102 51 63 22];
             app.VarNameEditField.Value = 'G_est';
 
             % Create f1Label
             app.f1Label = uilabel(app.GPAPanel);
             app.f1Label.HorizontalAlignment = 'right';
-            app.f1Label.Position = [166 91 25 22];
+            app.f1Label.Position = [167 84 25 22];
             app.f1Label.Text = 'f1';
 
             % Create GPA_f1
             app.GPA_f1 = uieditfield(app.GPAPanel, 'numeric');
             app.GPA_f1.Limits = [1 10000];
-            app.GPA_f1.Position = [201 91 41 22];
+            app.GPA_f1.Position = [202 84 42 22];
             app.GPA_f1.Value = 490;
 
             % Create f0Label
             app.f0Label = uilabel(app.GPAPanel);
             app.f0Label.HorizontalAlignment = 'right';
-            app.f0Label.Position = [166 115 25 22];
+            app.f0Label.Position = [167 108 25 22];
             app.f0Label.Text = 'f0';
 
             % Create GPA_f0
             app.GPA_f0 = uieditfield(app.GPAPanel, 'numeric');
             app.GPA_f0.Limits = [0.01 10000];
-            app.GPA_f0.Position = [201 115 42 22];
+            app.GPA_f0.Position = [202 108 42 22];
             app.GPA_f0.Value = 1;
 
             % Create A0Label
             app.A0Label = uilabel(app.GPAPanel);
             app.A0Label.HorizontalAlignment = 'right';
-            app.A0Label.Position = [167 67 25 22];
+            app.A0Label.Position = [168 60 25 22];
             app.A0Label.Text = 'A0';
 
             % Create GPA_A0
             app.GPA_A0 = uieditfield(app.GPAPanel, 'numeric');
             app.GPA_A0.Limits = [0 Inf];
-            app.GPA_A0.Position = [201 67 42 22];
+            app.GPA_A0.Position = [202 60 42 22];
             app.GPA_A0.Value = 6;
 
             % Create A1Label
             app.A1Label = uilabel(app.GPAPanel);
             app.A1Label.HorizontalAlignment = 'right';
-            app.A1Label.Position = [167 43 25 22];
+            app.A1Label.Position = [168 36 25 22];
             app.A1Label.Text = 'A1';
 
             % Create GPA_A1
             app.GPA_A1 = uieditfield(app.GPAPanel, 'numeric');
             app.GPA_A1.Limits = [0 Inf];
-            app.GPA_A1.Position = [201 43 42 22];
+            app.GPA_A1.Position = [202 36 42 22];
             app.GPA_A1.Value = 4;
 
             % Create NLabel
             app.NLabel = uilabel(app.GPAPanel);
             app.NLabel.HorizontalAlignment = 'right';
-            app.NLabel.Position = [167 17 25 22];
+            app.NLabel.Position = [168 10 25 22];
             app.NLabel.Text = 'N';
 
             % Create GPA_N
             app.GPA_N = uieditfield(app.GPAPanel, 'numeric');
-            app.GPA_N.Limits = [1 255];
+            app.GPA_N.Limits = [2 100];
             app.GPA_N.RoundFractionalValues = 'on';
-            app.GPA_N.Position = [201 17 42 22];
+            app.GPA_N.Position = [202 10 42 22];
             app.GPA_N.Value = 50;
-
-            % Create MotNb1or2Label
-            app.MotNb1or2Label = uilabel(app.GPAPanel);
-            app.MotNb1or2Label.HorizontalAlignment = 'right';
-            app.MotNb1or2Label.Position = [24 16 101 22];
-            app.MotNb1or2Label.Text = 'MotNb (1, or 2)';
-
-            % Create GPA_MotNb
-            app.GPA_MotNb = uieditfield(app.GPAPanel, 'numeric');
-            app.GPA_MotNb.Limits = [1 2];
-            app.GPA_MotNb.RoundFractionalValues = 'on';
-            app.GPA_MotNb.Position = [134 16 36 22];
-            app.GPA_MotNb.Value = 2;
-
-            % Create IdtypeLabel
-            app.IdtypeLabel = uilabel(app.GPAPanel);
-            app.IdtypeLabel.HorizontalAlignment = 'right';
-            app.IdtypeLabel.Position = [23 42 101 22];
-            app.IdtypeLabel.Text = 'Id. Type';
-
-            % Create GPA_IdType
-            app.GPA_IdType = uieditfield(app.GPAPanel, 'numeric');
-            app.GPA_IdType.Limits = [1 4];
-            app.GPA_IdType.RoundFractionalValues = 'on';
-            app.GPA_IdType.Position = [133 42 36 22];
-            app.GPA_IdType.Value = 2;
 
             % Create gpa_meas_startButton
             app.gpa_meas_startButton = uibutton(app.GPAPanel, 'push');
             app.gpa_meas_startButton.ButtonPushedFcn = createCallbackFcn(app, @gpa_meas_startButtonPushed, true);
-            app.gpa_meas_startButton.Position = [7 39 40 23];
+            app.gpa_meas_startButton.Position = [128 82 40 23];
             app.gpa_meas_startButton.Text = 'Start';
-
-            % Create IdType1plantcl2plantol3posplantclLabel
-            app.IdType1plantcl2plantol3posplantclLabel = uilabel(app.NucleoconnectionUIFigure);
-            app.IdType1plantcl2plantol3posplantclLabel.HorizontalAlignment = 'right';
-            app.IdType1plantcl2plantol3posplantclLabel.Position = [12 1 367 22];
-            app.IdType1plantcl2plantol3posplantclLabel.Text = 'Id. Type:1 = plant (c.l); 2 = plant (ol); 3 = pos plant (cl)';
 
             % Create IOValuesPanel
             app.IOValuesPanel = uipanel(app.NucleoconnectionUIFigure);
             app.IOValuesPanel.Title = 'I/O Values';
-            app.IOValuesPanel.Position = [511 27 131 159];
+            app.IOValuesPanel.Position = [556 27 124 159];
 
             % Create AxAvgEditFieldLabel
             app.AxAvgEditFieldLabel = uilabel(app.IOValuesPanel);
@@ -769,7 +766,7 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             % Create AxAvgEditField
             app.AxAvgEditField = uieditfield(app.IOValuesPanel, 'numeric');
             app.AxAvgEditField.ValueDisplayFormat = '%.3f';
-            app.AxAvgEditField.Position = [54 97 69 22];
+            app.AxAvgEditField.Position = [54 97 60 22];
 
             % Create AyAvgEditFieldLabel
             app.AyAvgEditFieldLabel = uilabel(app.IOValuesPanel);
@@ -780,7 +777,7 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             % Create AyAvgEditField
             app.AyAvgEditField = uieditfield(app.IOValuesPanel, 'numeric');
             app.AyAvgEditField.ValueDisplayFormat = '%.3f';
-            app.AyAvgEditField.Position = [54 70 69 22];
+            app.AyAvgEditField.Position = [54 70 60 22];
 
             % Create GzAvgEditFieldLabel
             app.GzAvgEditFieldLabel = uilabel(app.IOValuesPanel);
@@ -792,7 +789,7 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             app.GzAvgEditField = uieditfield(app.IOValuesPanel, 'numeric');
             app.GzAvgEditField.Limits = [-1000 1000];
             app.GzAvgEditField.ValueDisplayFormat = '%.3f';
-            app.GzAvgEditField.Position = [54 43 70 22];
+            app.GzAvgEditField.Position = [54 43 60 22];
 
             % Show the figure after all components are created
             app.NucleoconnectionUIFigure.Visible = 'on';
