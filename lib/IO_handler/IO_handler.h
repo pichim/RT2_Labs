@@ -18,7 +18,6 @@
 //  8 Strommessung Motor         PA_7  - ok
 //  9 Fehler Motor (Statusflag)  PB_8  - untested, TODO: Make use of this flag
 // 10 Real-time thread DO        PB_4  - ok
-// 10 Fast real-time thread DO   PB_5  - ok
 
 #define ENCODER_MOTOR_COUNTS_PER_TURN (4 * 4096)    // 4096 PPR encoder with x4 decoding
 #define ENCODER_PENDULUM_COUNTS_PER_TURN (4 * 1024) // 1024 PPR encoder with x4 decoding
@@ -29,7 +28,7 @@ class IO_handler
 public:
     IO_handler();
     virtual ~IO_handler();
-    void update(void); // Sample hardware once in fast_realtime_thread.
+    void update(void); // Sample hardware once in realtime_thread.
     float read_encoder_motor(void);
     float read_encoder_pendulum(void);
     void reset_encoders(void);
@@ -39,7 +38,6 @@ public:
     float read_current(void);
     void set_dir(uint8_t d);
     void set_enable_rtt_do(bool en);
-    void set_enable_frtt_do(bool en);
 
     // Cached telemetry; UART must not read/update the encoder counters itself.
     float get_current(void) const;
@@ -52,7 +50,7 @@ private:
     DebounceIn m_button;
     DigitalOut m_user_led;
     volatile bool m_button_pressed{false};
-    // Individual UART telemetry values are shared with the fast control thread.
+    // Individual UART telemetry values are shared with the UART sender.
     std::atomic<float> m_current{0.0f}, m_theta1{0.0f}, m_theta2{0.0f};
     void button_pressed(void);
 
@@ -62,8 +60,7 @@ private:
     float m_pwm_val;            // stored PWM value
     DigitalOut m_dir;           // Direction for motor
     DigitalOut m_enable;        // Enable power h-bridge
-    AnalogIn m_current_sensor; // Current sensing
+    AnalogIn m_current_sensor;  // Current sensing
     DigitalIn m_fault;          // Fault status flag
     DigitalOut m_rtt_do;        // Real-time thread debug output
-    DigitalOut m_frtt_do;       // Fast real-time thread debug output
 };

@@ -635,7 +635,7 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             app.DownsamplingEditField = uieditfield(app.TimemeasuresPanel, 'numeric');
             app.DownsamplingEditField.Limits = [1 50];
             app.DownsamplingEditField.Position = [208 33 23 22];
-            app.DownsamplingEditField.Value = 1;
+            app.DownsamplingEditField.Value = 20;
 
             % Create HzLabel
             app.HzLabel = uilabel(app.TimemeasuresPanel);
@@ -695,7 +695,7 @@ classdef GPA_nucleo_UART_exported < matlab.apps.AppBase
             app.GPA_f1 = uieditfield(app.GPAPanel, 'numeric');
             app.GPA_f1.Limits = [1 10000];
             app.GPA_f1.Position = [202 84 42 22];
-            app.GPA_f1.Value = 490;
+            app.GPA_f1.Value = 4990;
 
             % Create f0Label
             app.f0Label = uilabel(app.GPAPanel);

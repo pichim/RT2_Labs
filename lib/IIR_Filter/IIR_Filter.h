@@ -10,7 +10,7 @@ public:
 
     void lowPass1Init(float, float);
     void differentiatingLowPass1Init(float, float);
-    // Second-order filters used by fast_realtime_thread; fcut in Hz.
+    // Second-order filters; fcut in Hz.
     void notchInit(float fcut, float D, float Ts);
     void lowPass2Init(float fcut, float D, float Ts);
     float evaluate(float);

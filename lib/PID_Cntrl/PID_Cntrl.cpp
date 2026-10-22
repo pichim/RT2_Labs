@@ -4,24 +4,16 @@
                     Ts
     C(z) = (P + I ---------- + D * tustin(s / (tau_f * s + 1))) * tustin(1 / (tau_ro * s + 1))
                  1 - z^-1
-    - Corresponds to MATLAB command: C = pid(P, I, D, tau_f, Ts, 'IFormula', 'BackwardEuler', 'DFormula', 'Trapezoidal') * c2d(tf(1, [tau_ro 1]), Ts, 'tustin')
+    - Corresponds to MATLAB command: C = pid(P, I, D, tau_f, Ts, 'IFormula', 'BackwardEuler', 'DFormula', 'Trapezoidal')
+   * c2d(tf(1, [tau_ro 1]), Ts, 'tustin')
     - Anti-Windup: Saturation of Ipart and u = P*e + IPart + DPart
 */
 
-PID_Cntrl::PID_Cntrl(float I, float Ts, float uMin, float uMax)
-{
-    setup(I, Ts, uMin, uMax);
-}
+PID_Cntrl::PID_Cntrl(float I, float Ts, float uMin, float uMax) { setup(I, Ts, uMin, uMax); }
 
-PID_Cntrl::PID_Cntrl(float P, float I, float Ts, float uMin, float uMax)
-{
-    setup(P, I, Ts, uMin, uMax);
-}
+PID_Cntrl::PID_Cntrl(float P, float I, float Ts, float uMin, float uMax) { setup(P, I, Ts, uMin, uMax); }
 
-PID_Cntrl::PID_Cntrl(float P, float I, float D, float Ts, float uMin, float uMax)
-{
-    setup(P, I, D, Ts, uMin, uMax);
-}
+PID_Cntrl::PID_Cntrl(float P, float I, float D, float Ts, float uMin, float uMax) { setup(P, I, D, Ts, uMin, uMax); }
 
 PID_Cntrl::PID_Cntrl(float P, float I, float D, float tau_f, float Ts, float uMin, float uMax)
 {
@@ -82,10 +74,7 @@ void PID_Cntrl::setup(float P, float I, float D, float tau_f, float tau_ro, floa
     reset();
 }
 
-void PID_Cntrl::setParamP(float P)
-{
-    this->P = P;
-}
+void PID_Cntrl::setParamP(float P) { this->P = P; }
 
 void PID_Cntrl::setParamI(float I)
 {
@@ -99,10 +88,7 @@ void PID_Cntrl::setParamD(float D)
     updateParamD(D, Ts, tau_f);
 }
 
-void PID_Cntrl::setParamF(float F)
-{
-    this->F = F;
-}
+void PID_Cntrl::setParamF(float F) { this->F = F; }
 
 void PID_Cntrl::scalePIDT2params(float scale)
 {
@@ -122,7 +108,8 @@ float PID_Cntrl::update(float e)
     Dpart = bd * (e - d_old) - ad * Dpart;
     d_old = e;
     float u = P * e + IPart + Dpart;
-    uf = saturate(bf * (u + u_old) - af * uf, uMin, uMax);
+    // Bypass the roll-off when disabled; cancellation fails after saturation.
+    uf = tau_ro > 0.0f ? saturate(bf * (u + u_old) - af * uf, uMin, uMax) : saturate(u, uMin, uMax);
     u_old = u;
     return uf;
 }
@@ -136,7 +123,8 @@ float PID_Cntrl::update(float e, float y)
     Dpart = bd * (y - d_old) - ad * Dpart;
     d_old = y;
     float u = P * e + IPart - Dpart;
-    uf = saturate(bf * (u + u_old) - af * uf, uMin, uMax);
+    // Bypass the roll-off when disabled; cancellation fails after saturation.
+    uf = tau_ro > 0.0f ? saturate(bf * (u + u_old) - af * uf, uMin, uMax) : saturate(u, uMin, uMax);
     u_old = u;
     return uf;
 }
@@ -150,7 +138,8 @@ float PID_Cntrl::update(float w, float y_p, float y_i, float y_d)
     Dpart = bd * (y_d - d_old) - ad * Dpart;
     d_old = y_d;
     float u = P * (w - y_p) + IPart - Dpart + F * w;
-    uf = saturate(bf * (u + u_old) - af * uf, uMin, uMax);
+    // Bypass the roll-off when disabled; cancellation fails after saturation.
+    uf = tau_ro > 0.0f ? saturate(bf * (u + u_old) - af * uf, uMin, uMax) : saturate(u, uMin, uMax);
     u_old = u;
     return uf;
 }
@@ -176,30 +165,15 @@ float PID_Cntrl::prewarp(float T, float Ts)
     return static_cast<float>(Ts_d / (2.0 * tan(Ts_d / (2.0 * T_d))));
 }
 
-float PID_Cntrl::get_ulimit()
-{
-    return uMax;
-}
+float PID_Cntrl::get_ulimit() { return uMax; }
 
-float PID_Cntrl::get_P_gain()
-{
-    return P;
-}
+float PID_Cntrl::get_P_gain() { return P; }
 
-float PID_Cntrl::get_bd()
-{
-    return bd;
-}
+float PID_Cntrl::get_bd() { return bd; }
 
-float PID_Cntrl::get_ad()
-{
-    return ad;
-}
+float PID_Cntrl::get_ad() { return ad; }
 
-float PID_Cntrl::getCurrentOutput(void)
-{
-    return uf;
-}
+float PID_Cntrl::getCurrentOutput(void) { return uf; }
 
 void PID_Cntrl::setCoefficients(float P, float I, float D, float tau_f, float tau_ro, float Ts)
 {
@@ -244,7 +218,4 @@ void PID_Cntrl::updateParamRO(float Ts, float tau_ro)
     af = static_cast<float>((Ts_d - 2.0 * tau_ro_d) / (Ts_d + 2.0 * tau_ro_d));
 }
 
-float PID_Cntrl::saturate(float u, float uMin, float uMax)
-{
-    return (u > uMax) ? uMax : (u < uMin) ? uMin : u;
-}
+float PID_Cntrl::saturate(float u, float uMin, float uMax) { return (u > uMax) ? uMax : (u < uMin) ? uMin : u; }

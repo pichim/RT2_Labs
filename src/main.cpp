@@ -9,8 +9,7 @@
 // IMPORTANT:
 // - Do NOT set the BufferedSerial to non-blocking mode, as this will break proper communication!
 
-float Ts = 1.0f / 1.0e3f;
-float Ts_fast = 50.0e-6f; // existing 20 kHz current controller
+float Ts = 1.0f / 10.0e3f;                   // 10 kHz control; motor PWM remains at 20 kHz
 GPA myGPA(1.0f, 245.0f, 30, 0.1f, 0.2f, Ts); // prepared for realtime_thread; update/excitation are commented out
 DataLogger myDataLogger(1);
 
@@ -25,7 +24,7 @@ int main()
     uart_comm_thread_receive uart_com_receive(&uart_serial, .01f);        // receive communication thread
 
     // Real-Time Thread
-    realtime_thread rt_thread(&io_handler, Ts, Ts_fast);
+    realtime_thread rt_thread(&io_handler, Ts);
 
     // Start the communication and control threads.
     uart_com_receive.start_uart();

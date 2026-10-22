@@ -10,7 +10,7 @@
 #include <math.h>
 
 #ifndef M_PI
-    #define M_PI 3.141592653589793238462643383279502884 // pi
+#define M_PI 3.141592653589793238462643383279502884 // pi
 #endif
 
 class PID_Cntrl
@@ -22,7 +22,7 @@ public:
     explicit PID_Cntrl(float P, float I, float D, float tau_f, float Ts, float uMin, float uMax);
     explicit PID_Cntrl(float P, float I, float D, float tau_f, float tau_ro, float Ts, float uMin, float uMax);
 
-    explicit PID_Cntrl(){};
+    explicit PID_Cntrl() {};
 
     virtual ~PID_Cntrl() = default;
 

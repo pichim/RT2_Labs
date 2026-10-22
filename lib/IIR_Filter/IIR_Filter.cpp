@@ -96,8 +96,7 @@ float IIR_Filter::evaluate(const float u_k)
 {
     // --- AUFGABE 2.4 ---
     // update filter output
-    const float y_k = m_b1 * u_k + m_b0 * m_u_kmin1 + m_b2 * m_u_kmin2
-        - m_a0 * m_y_kmin1 - m_a1 * m_y_kmin2;
+    const float y_k = m_b1 * u_k + m_b0 * m_u_kmin1 + m_b2 * m_u_kmin2 - m_a0 * m_y_kmin1 - m_a1 * m_y_kmin2;
 
     // store values for next iteration
     m_u_kmin2 = m_u_kmin1;

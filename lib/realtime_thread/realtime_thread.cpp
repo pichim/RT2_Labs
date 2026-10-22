@@ -14,18 +14,21 @@ extern GPA myGPA;
 #define M_PIf 3.14159265358979323846f // pi
 #endif
 
+// Uncomment to enable the existing 3 kHz current-controller roll-off.
+// #define ENABLE_CURRENT_ROLLOFF
+
 using namespace Eigen;
 using namespace std::chrono;
 
 // constructor for realtime_thread loop
-realtime_thread::realtime_thread(IO_handler *io_handler, float Ts, float Ts_fast)
+realtime_thread::realtime_thread(IO_handler *io_handler, float Ts)
     : m_Thread(osPriorityHigh1, 4096)
-    , m_fast_rt_thread(*io_handler, Ts_fast)
 {
     m_Ts = Ts;                 // the sampling time
     m_IO_handler = io_handler; // a pointer to the io handler
     m_state = INIT;
     m_IO_handler->set_enable_motor(false);
+    m_IO_handler->write_pwm_motor(0.0f);
     m_IO_handler->set_user_led(false);
     m_Timer.reset();
     m_Timer.start();
@@ -36,6 +39,34 @@ realtime_thread::~realtime_thread() {}
 // this is the main loop called every Ts with high priority
 void realtime_thread::loop(void)
 {
+    // Current controller, matching matlab/inv_rot_pen_ini.m.
+    const float supply_voltage = 24.0f;
+    const float offset_voltage = 2.0f; // motor deadzone compensation
+    const float kp_i = 2.5f;
+    const float tn_i = 0.0013f / 4.5320f; // existing integral time constant (L / R)
+    const float ki_i = kp_i / tn_i;
+#ifdef ENABLE_CURRENT_ROLLOFF
+    const float tau_ro_i = 1.0f / (2.0f * M_PIf * 3.0e3f);
+#else
+    const float tau_ro_i = 0.0f;
+#endif
+    PID_Cntrl pid_i;
+    pid_i.setup(kp_i,
+                ki_i,
+                0.0f,
+                0.0f,
+                tau_ro_i,
+                m_Ts,
+                -supply_voltage + offset_voltage,
+                supply_voltage - offset_voltage);
+
+    // Encoder notch filters: same frequency/damping, recalculated for m_Ts.
+    const float f_notch = 680.0f;
+    const float d_notch = 0.6f;
+    IIR_Filter fil_notch1, fil_notch2;
+    fil_notch1.notchInit(f_notch, d_notch, m_Ts);
+    fil_notch2.notchInit(f_notch, d_notch, m_Ts);
+
     // State feedback with current input, from matlab/inv_rot_pen_ini.m.
     // x = [theta1; shortangle(theta2-pi); omega1; omega2].
     Matrix<float, 1, 4> K(-0.447213595f, 3.437582984f, -0.155543856f, 0.303057827f);
@@ -46,7 +77,7 @@ void realtime_thread::loop(void)
     const float phi2_enable = 0.1745329252f;  // rad, 10 deg
     const float phi2_disable = 0.5235987756f; // rad, 30 deg
 
-    // Same Tustin differentiating filters as G_diff in MATLAB, now at 1 kHz.
+    // Same Tustin differentiating filters as G_diff in MATLAB, now at 10 kHz.
     const float Tf = 1.0f / (2.0f * M_PIf * 100.0f);
     IIR_Filter fil_diff1, fil_diff2;
     fil_diff1.differentiatingLowPass1Init(Tf, m_Ts);
@@ -69,14 +100,21 @@ void realtime_thread::loop(void)
 
         float w = myDataLogger.get_set_value(time); // get set values from the GUI [rad]
 
-        float current, theta1, theta2;
-        m_fast_rt_thread.getMeasurements(current, theta1, theta2);
+        // Update sensor readings once, as in mini_cuboid.
+        m_IO_handler->update();
+        const float current = m_IO_handler->get_current();
+        const float theta1_raw = m_IO_handler->get_theta1();
+        const float theta2_raw = m_IO_handler->get_theta2();
         if (first_measurement) {
-            // A nonzero encoder angle must not create a startup velocity impulse.
-            fil_diff1.reset(theta1, 0.0f);
-            fil_diff2.reset(theta2, 0.0f);
+            // Initialize notch histories at the measured angles (unity DC gain).
+            fil_notch1.reset(theta1_raw, theta1_raw);
+            fil_notch2.reset(theta2_raw, theta2_raw);
+            fil_diff1.reset(theta1_raw, 0.0f);
+            fil_diff2.reset(theta2_raw, 0.0f);
             first_measurement = false;
         }
+        const float theta1 = fil_notch1(theta1_raw);
+        const float theta2 = fil_notch2(theta2_raw);
         const float omega1 = fil_diff1(theta1);
         const float omega2 = fil_diff2(theta2);
         const float phi2 = shortangle(theta2 - M_PIf);
@@ -128,7 +166,19 @@ void realtime_thread::loop(void)
             else if (i_des < 0.0f)
                 i_des -= i_friction;
         }
-        m_fast_rt_thread.updateState(m_state == BALANCE, i_des);
+
+        // Current controller and motor output, in the same 10 kHz loop.
+        m_IO_handler->set_enable_motor(m_state == BALANCE);
+        if (m_state == BALANCE) {
+            const float current_error = i_des - current;
+            const float u = pid_i.update(current_error, current);
+            m_IO_handler->set_dir(u > 0.0f ? 0 : 1);
+            const float pwm = saturate((fabsf(u) + offset_voltage) / supply_voltage, 0.0f, 1.0f);
+            m_IO_handler->write_pwm_motor(pwm);
+        } else {
+            m_IO_handler->write_pwm_motor(0.0f);
+            pid_i.reset();
+        }
 
         if (m_state == ARMED) {
             if (++led_counter >= led_half_period) {
@@ -171,7 +221,6 @@ void realtime_thread::sendSignal() { m_Thread.flags_set(m_ThreadFlag); }
 
 void realtime_thread::start_loop(void)
 {
-    m_fast_rt_thread.start_loop();
     m_Thread.start(callback(this, &realtime_thread::loop));
     m_Ticker.attach(callback(this, &realtime_thread::sendSignal), microseconds{static_cast<int64_t>(m_Ts * 1e6f)});
 }

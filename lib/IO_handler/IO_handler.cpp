@@ -13,7 +13,6 @@ IO_handler::IO_handler(void)
     , m_current_sensor(PA_7)
     , m_fault(PB_8)
     , m_rtt_do(PB_4)
-    , m_frtt_do(PB_5)
 {
     // B1 is active low on NUCLEO-F446RE; use the existing 20 ms debounce.
     m_button.fall(callback(this, &IO_handler::button_pressed));
@@ -55,7 +54,6 @@ void IO_handler::set_enable_motor(bool en) { m_enable = en ? 1 : 0; }
 float IO_handler::read_current(void) { return (m_current_sensor.read() * 3.3f - 1.5f) * -1.0f / (50.0f * 7.0e-3f); }
 void IO_handler::set_dir(uint8_t d) { m_dir = d; }
 void IO_handler::set_enable_rtt_do(bool en) { m_rtt_do = en ? 1 : 0; }
-void IO_handler::set_enable_frtt_do(bool en) { m_frtt_do = en ? 1 : 0; }
 float IO_handler::get_current(void) const { return m_current.load(std::memory_order_relaxed); }
 float IO_handler::get_theta1(void) const { return m_theta1.load(std::memory_order_relaxed); }
 float IO_handler::get_theta2(void) const { return m_theta2.load(std::memory_order_relaxed); }

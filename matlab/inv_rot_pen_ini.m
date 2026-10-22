@@ -15,15 +15,16 @@ addpath(matlab_dir, fullfile(matlab_dir, 'app'));
 % App I/O fields Out / In1 / In2 show current [A] / theta1 [rad] / theta2 [rad].
 % Six logged columns: i_des [A], current [A], theta1 [rad], theta2 upright error
 % [rad], omega1 [rad/s], omega2 [rad/s]. No averaging is applied.
-% GPA is not active yet. Once finalized at 1 kHz, select frequencies below
-% 500 Hz; the unchanged app's default upper frequency of 1000 Hz is too high.
+% GPA is not active yet. Once finalized, select frequencies below 5000 Hz.
+% GUI defaults: GPA upper frequency 4990 Hz, logging downsampling 20.
+% At 10 kHz, 1000 logged rows cover approximately 2 sec at downsampling 20.
 
 
 %% Model and controller parameters
 
 % Sampling time
-Ts = 1e-3; % sec, matching realtime_thread in src/main.cpp
-Ts_fast = 50e-6; % sec, existing 20 kHz current controller
+Ts = 1 / 10e3; % sec, matching realtime_thread in src/main.cpp
+f_pwm = 20e3; % Hz, hardware PWM is independent of the control sampling time
 
 % Max. current
 i_max = 0.5; % A, saturation BEFORE friction compensation as in Simulink
@@ -40,6 +41,35 @@ G_diff = c2d(s / (Tf*s + 1), Ts, 'tustin');
 
 % Physical parameters
 param = get_parameter();
+
+% Encoder notch filter (Tustin with prewarping), matching IIR_Filter.
+f_notch = 680; % Hz
+d_notch = 0.6;
+w_notch = 2*pi*f_notch;
+G_notch = c2d((s^2 + w_notch^2) / ...
+    (s^2 + 2*d_notch*w_notch*s + w_notch^2), Ts, ...
+    c2dOptions('Method', 'tustin', 'PrewarpFrequency', w_notch));
+
+% Current controller, matching realtime_thread and PID_Cntrl.
+supply_voltage = 24; % V
+offset_voltage = 2; % V, motor deadzone compensation
+kp_i = 2.5;
+tn_i = 0.0013 / 4.5320; % sec, existing firmware value (L / R)
+ki_i = kp_i / tn_i;
+enable_current_rolloff = false; % match ENABLE_CURRENT_ROLLOFF in C++
+tau_ro_i = 1 / (2*pi*3e3);
+C_i_no_rolloff = pid(kp_i, ki_i, 0, 0, Ts, 'IFormula', 'BackwardEuler');
+G_rolloff = c2d(1 / (tau_ro_i*s + 1), Ts, 'tustin');
+C_i_rolloff = C_i_no_rolloff * G_rolloff;
+C_i = C_i_no_rolloff;
+if enable_current_rolloff
+    C_i = C_i_rolloff;
+end
+
+% Linear R/L check only: no back-EMF, PWM ripple, deadzone, limits or computation delay.
+G_i = c2d(1 / (param.L*s + param.R), Ts, 'zoh');
+G_i_cl_no_rolloff = feedback(G_i * C_i_no_rolloff, 1);
+G_i_cl_rolloff = feedback(G_i * C_i_rolloff, 1);
 
 % Pendulum up
 theta0 = [0; pi];

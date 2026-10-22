@@ -4,14 +4,14 @@
 
 #include "IIR_Filter.h"
 #include "IO_handler.h"
+#include "PID_Cntrl.h"
 #include "ThreadFlag.h"
-#include "fast_realtime_thread.h"
 #include "mbed.h"
 
 class realtime_thread
 {
 public:
-    realtime_thread(IO_handler *, float Ts, float Ts_fast);
+    realtime_thread(IO_handler *, float Ts);
     virtual ~realtime_thread();
     void start_loop(void);
 
@@ -30,7 +30,6 @@ private:
     Timer m_Timer;
     float m_Ts;
     ControlState m_state;
-    fast_realtime_thread m_fast_rt_thread;
     void sendSignal();
     float saturate(float, float, float);
     float shortangle(float);
