@@ -154,9 +154,10 @@ P/(1 + C*P) ) compliance, disturbance plant input on plant output
 
 #include "GPA.h"
 
-#include "math.h"
-#include <cmath>
 #include <climits>
+#include <cmath>
+
+#include "math.h"
 #include "mbed.h"
 #define pi 3.14159265358979323846 // M_PI
 
@@ -205,12 +206,12 @@ GPA::GPA(float f0,
     new_data_available = false;
     meas_is_finished = false;
 
-    if (!validParameters(f0, f1, NfexcDes, Aexc0, Aexc1, Ts) || !fexcDes
-        || NperMin < 1 || NmeasMin < 1 || Nstart < 0 || Nsweep < 0)
+    if (!validParameters(f0, f1, NfexcDes, Aexc0, Aexc1, Ts) || !fexcDes || NperMin < 1 || NmeasMin < 1 || Nstart < 0 ||
+        Nsweep < 0)
         return;
     for (int i = 0; i < NfexcDes; i++) {
-        if (!std::isfinite(fexcDes[i]) || fexcDes[i] <= 0.0f || fexcDes[i] >= 0.5f / Ts
-            || (i > 0 && fexcDes[i] <= fexcDes[i - 1]))
+        if (!std::isfinite(fexcDes[i]) || fexcDes[i] <= 0.0f || fexcDes[i] >= 0.5f / Ts ||
+            (i > 0 && fexcDes[i] <= fexcDes[i - 1]))
             return;
     }
     if (!validParameters(fexcDes[0], fexcDes[NfexcDes - 1], NfexcDes, Aexc0, Aexc1, Ts))
@@ -231,7 +232,15 @@ GPA::GPA(
     float *fexcDes, int NfexcDes, int NperMin, int NmeasMin, float Ts, float Aexc0, float Aexc1, int Nstart, int Nsweep)
     : GPA(fexcDes && NfexcDes >= 2 && NfexcDes <= MAX_FREQUENCY_POINTS ? fexcDes[0] : 0.0f,
           fexcDes && NfexcDes >= 2 && NfexcDes <= MAX_FREQUENCY_POINTS ? fexcDes[NfexcDes - 1] : 0.0f,
-          fexcDes, NfexcDes, NperMin, NmeasMin, Ts, Aexc0, Aexc1, Nstart, Nsweep)
+          fexcDes,
+          NfexcDes,
+          NperMin,
+          NmeasMin,
+          Ts,
+          Aexc0,
+          Aexc1,
+          Nstart,
+          Nsweep)
 {
 }
 
@@ -279,8 +288,8 @@ bool GPA::setParameters(float fMin,
                         int Nsweep,
                         bool doPrint)
 {
-    if (!validParameters(fMin, fMax, NfexcDes, Aexc0, Aexc1, Ts)
-        || NperMin < 1 || NmeasMin < 1 || Nstart < 0 || Nsweep < 0)
+    if (!validParameters(fMin, fMax, NfexcDes, Aexc0, Aexc1, Ts) || NperMin < 1 || NmeasMin < 1 || Nstart < 0 ||
+        Nsweep < 0)
         return false;
     status = 0; // stop updates before replacing measurement parameters
     this->doPrint = doPrint;
@@ -429,8 +438,13 @@ float GPA::update(float inp, float out)
         if (doPrint) {
             // Seven columns: frequency [Hz], real/imag of U, Y and R.
             printf("%11.4e %12.5e %12.5e %12.5e %12.5e %12.5e %12.5e\r\n",
-                   gpaData.fexc, gpaData.Ureal, gpaData.Uimag,
-                   gpaData.Yreal, gpaData.Yimag, gpaData.Rreal, gpaData.Rimag);
+                   gpaData.fexc,
+                   gpaData.Ureal,
+                   gpaData.Uimag,
+                   gpaData.Yreal,
+                   gpaData.Yimag,
+                   gpaData.Rreal,
+                   gpaData.Rimag);
         }
         f_iter += 1;
         j_iter = 1;
@@ -478,11 +492,10 @@ void GPA::initializeConstants(float Ts)
 
 bool GPA::validParameters(float fMin, float fMax, int NfexcDes, float Aexc0, float Aexc1, float Ts)
 {
-    if (!(NfexcDes >= 2 && NfexcDes <= MAX_FREQUENCY_POINTS
-        && std::isfinite(Ts) && Ts > 0.0f && 3.0f / Ts < static_cast<float>(INT_MAX)
-        && std::isfinite(fMin) && std::isfinite(fMax) && fMin > 0.0f && fMax > fMin
-        && fMax < 0.5f / Ts && 3.0f / fMin / Ts < static_cast<float>(INT_MAX)
-        && std::isfinite(Aexc0) && std::isfinite(Aexc1) && Aexc0 > 0.0f && Aexc1 > 0.0f))
+    if (!(NfexcDes >= 2 && NfexcDes <= MAX_FREQUENCY_POINTS && std::isfinite(Ts) && Ts > 0.0f &&
+          3.0f / Ts < static_cast<float>(INT_MAX) && std::isfinite(fMin) && std::isfinite(fMax) && fMin > 0.0f &&
+          fMax > fMin && fMax < 0.5f / Ts && 3.0f / fMin / Ts < static_cast<float>(INT_MAX) && std::isfinite(Aexc0) &&
+          std::isfinite(Aexc1) && Aexc0 > 0.0f && Aexc1 > 0.0f))
         return false;
     // Distinct limits can still have identical reciprocals in single precision.
     const float inverse_span = 1.0f / fMax - 1.0f / fMin;

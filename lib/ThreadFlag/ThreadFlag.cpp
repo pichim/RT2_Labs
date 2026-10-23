@@ -50,18 +50,12 @@ ThreadFlag::~ThreadFlag()
 /**
  * Gets the assigned thread flag.
  */
-unsigned int ThreadFlag::read() const
-{
-    return threadFlag;
-}
+unsigned int ThreadFlag::read() const { return threadFlag; }
 
 /**
  * The empty operator is a shorthand notation of the <code>read()</code> method.
  */
-ThreadFlag::operator unsigned int() const
-{
-    return read();
-}
+ThreadFlag::operator unsigned int() const { return read(); }
 
 /**
  * Static utility method to count how many flags are currently in use.

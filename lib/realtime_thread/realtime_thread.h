@@ -12,16 +12,16 @@ class realtime_thread
 public:
     realtime_thread(IO_handler *, float Ts);
     virtual ~realtime_thread();
-    void start_loop(void);
+    void start_loop();
 
 private:
     IO_handler *m_IO_handler;
-    void loop(void);
+    void loop();
     Timer m_Timer;
     Thread m_Thread;
     Ticker m_Ticker;
     ThreadFlag m_ThreadFlag;
-    void sendSignal();
+    void send_thread_flag();
     float saturate(float, float, float);
     float m_Ts;
 };

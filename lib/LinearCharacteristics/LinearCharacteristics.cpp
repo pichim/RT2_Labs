@@ -2,10 +2,7 @@
 
 using namespace std;
 
-LinearCharacteristics::LinearCharacteristics(float gain, float offset)
-{
-    init(gain, offset);
-}
+LinearCharacteristics::LinearCharacteristics(float gain, float offset) { init(gain, offset); }
 
 // --- P1, AUFGABE 1.5 ---
 // constructor with min/max values

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 
 #include "LinearCharacteristics.h"
@@ -11,10 +12,10 @@ public:
     IO_handler();          // default constructor
     virtual ~IO_handler(); // deconstructor
 
-    float read_ain1(void);  // read analog input 1
-    float read_ain2(void);  // read analog input 2
+    float read_ain1();      // read analog input 1
+    float read_ain2();      // read analog input 2
     void write_aout(float); // write analog output
-    float get_set_value();
+    float get_set_value() const;
     void write_dout(bool);
 
 private:
@@ -22,7 +23,8 @@ private:
     AnalogIn m_a_in1;
     AnalogIn m_a_in2;
     DigitalOut m_d_out;
-    float m_set_value;
+    // Shared with the UART sender; each value is read independently.
+    std::atomic<float> m_set_value{0.0f};
     // --- P1, AUFGABE 1.6 & 1.7 ---
     // add linear characteristics for input and output
     LinearCharacteristics m_lc_out, m_lc_in;
