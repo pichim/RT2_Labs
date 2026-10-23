@@ -15,7 +15,6 @@ IO_handler::IO_handler(float Ts)
 {
     // attach debounced key press function
     m_button.rise(callback(this, &IO_handler::button_pressed));
-    m_button_pressed = false;
 
     m_d_out = 0;
 
@@ -46,47 +45,59 @@ IO_handler::IO_handler(float Ts)
 
 IO_handler::~IO_handler() {}
 
-void IO_handler::update(void)
+void IO_handler::update()
 {
+    // Sample hardware and run filters; only the real-time thread calls update().
     // update encoder readings and calculate speed
-    m_phi_fw = m_encoder.getAngleRad();
-    m_phi_fw_vel = m_fil_diff(m_phi_fw);
+    const float phi_fw = m_encoder.getAngleRad();
+    const float phi_fw_vel = m_fil_diff(phi_fw);
 
+    // --- AUFGABE 1.1, 1.2 & 1.3 ---
     // apply linear characteristics to imu readings
-    m_ax = m_lc_ax2ax(m_imu.readAcc_raw(1));
-    m_ay = m_lc_ay2ay(-m_imu.readAcc_raw(0));
-    m_gz = m_lc_gz2gz(m_imu.readGyro_raw(2));
+    const float ax = m_lc_ax2ax(m_imu.readAcc_raw(1));
+    const float ay = m_lc_ay2ay(-m_imu.readAcc_raw(0));
+    const float gz = m_lc_gz2gz(m_imu.readGyro_raw(2));
 
     // --- AUFGABE 3.2 ---
     // calculate complementary filter for wheel angle
-    // m_phi_bd = atan2f(m_ax, m_ay) - M_PIf / 4.0f;
-    // m_phi_bd = atan2f(m_fil_ax(m_ax), m_fil_ay(m_ay)) - M_PIf / 4.0f;
-    m_phi_bd = atan2f(m_fil_ax(m_ax), m_fil_ay(m_ay)) - M_PIf / 4.0f + m_tau * m_fil_gz(m_gz);
+    // const float phi_bd = atan2f(ax, ay) - M_PIf / 4.0f;
+    // const float phi_bd = atan2f(m_fil_ax(ax), m_fil_ay(ay)) - M_PIf / 4.0f;
+    const float phi_bd = atan2f(m_fil_ax(ax), m_fil_ay(ay)) - M_PIf / 4.0f + m_tau * m_fil_gz(gz);
+
+    m_phi_fw = phi_fw;
+    m_phi_fw_vel = phi_fw_vel;
+    m_phi_bd = phi_bd;
+    m_ax.store(ax, std::memory_order_relaxed);
+    m_ay.store(ay, std::memory_order_relaxed);
+    m_gz.store(gz, std::memory_order_relaxed);
 }
 
-float IO_handler::get_phi_fw(void) { return m_phi_fw; }
+float IO_handler::get_phi_fw() const { return m_phi_fw; }
 
-float IO_handler::get_phi_bd(void) { return m_phi_bd; }
+float IO_handler::get_phi_bd() const { return m_phi_bd; }
 
-float IO_handler::get_phi_fw_vel(void) { return m_phi_fw_vel; }
+float IO_handler::get_phi_fw_vel() const { return m_phi_fw_vel; }
 
-float IO_handler::get_ax(void) { return m_ax; }
+float IO_handler::get_ax() const { return m_ax.load(std::memory_order_relaxed); }
 
-float IO_handler::get_ay(void) { return m_ay; }
+float IO_handler::get_ay() const { return m_ay.load(std::memory_order_relaxed); }
 
-float IO_handler::get_gz(void) { return m_gz; }
+float IO_handler::get_gz() const { return m_gz.load(std::memory_order_relaxed); }
 
 void IO_handler::write_current(float i_des) { m_a_out = m_lc_i2u(i_des); }
 
-void IO_handler::enable_escon(void) { m_d_out = 1; }
+void IO_handler::enable_escon() { m_d_out = 1; }
 
-void IO_handler::disable_escon(void) { m_d_out = 0; }
+void IO_handler::disable_escon() { m_d_out = 0; }
 
-bool IO_handler::get_and_reset_button_state(void)
+bool IO_handler::get_and_reset_button_state()
 {
-    bool button_pressed = m_button_pressed;
+    // The flag is shared with the debounced interrupt callback.
+    core_util_critical_section_enter();
+    const bool pressed = m_button_pressed;
     m_button_pressed = false;
-    return button_pressed;
+    core_util_critical_section_exit();
+    return pressed;
 }
 
 void IO_handler::button_pressed() { m_button_pressed = true; }

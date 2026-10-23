@@ -32,7 +32,7 @@ realtime_thread::realtime_thread(IO_handler *io_handler, float Ts)
 realtime_thread::~realtime_thread() {}
 
 // this is the main loop called every Ts with high priority
-void realtime_thread::loop(void)
+void realtime_thread::loop()
 {
     // motor constant
     const float km = 36.9e-3f;
@@ -168,10 +168,11 @@ float realtime_thread::saturate(float x, float ll, float ul)
     return x;
 }
 
-void realtime_thread::sendSignal() { m_Thread.flags_set(m_ThreadFlag); }
+void realtime_thread::send_thread_flag() { m_Thread.flags_set(m_ThreadFlag); }
 
-void realtime_thread::start_loop(void)
+void realtime_thread::start_loop()
 {
     m_Thread.start(callback(this, &realtime_thread::loop));
-    m_Ticker.attach(callback(this, &realtime_thread::sendSignal), microseconds{static_cast<int64_t>(m_Ts * 1e6f)});
+    m_Ticker.attach(callback(this, &realtime_thread::send_thread_flag),
+                    microseconds{static_cast<int64_t>(m_Ts * 1e6f)});
 }

@@ -40,10 +40,10 @@ public:
     float read() const { return m_val; }
 
 private:
-    float   m_val;         // rolling average (actually the sum of scaled samples)
-    uint8_t m_N;           // number of samples in the filter
-    uint8_t m_idx;         // current index for the ring buffer
-    float*  m_ring_buffer; // dynamically allocated array storing scaled samples
+    float m_val;          // rolling average (actually the sum of scaled samples)
+    uint8_t m_N;          // number of samples in the filter
+    uint8_t m_idx;        // current index for the ring buffer
+    float *m_ring_buffer; // dynamically allocated array storing scaled samples
 };
 
 #endif /* AVG_FILTER_H_ */

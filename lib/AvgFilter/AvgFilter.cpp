@@ -1,11 +1,9 @@
 #include "AvgFilter.h"
 
-AvgFilter::AvgFilter(uint8_t N)
-{
-    init(N);
-}
+AvgFilter::AvgFilter(uint8_t N) { init(N); }
 
-AvgFilter::~AvgFilter() {
+AvgFilter::~AvgFilter()
+{
     if (m_ring_buffer) {
         free(m_ring_buffer);
         m_ring_buffer = nullptr;
@@ -16,7 +14,7 @@ void AvgFilter::init(uint8_t N)
 {
     m_N = N;
     // allocate space for the ring buffer (each element is a float)
-    m_ring_buffer = (float*)malloc(m_N * sizeof(float));
+    m_ring_buffer = (float *)malloc(m_N * sizeof(float));
     // reset the filter (fills ring buffer with zeros by default)
     reset();
 }
@@ -39,10 +37,7 @@ float AvgFilter::reset(float val)
     return m_val;
 }
 
-float AvgFilter::reset()
-{
-    return reset(0.0f);
-}
+float AvgFilter::reset() { return reset(0.0f); }
 
 float AvgFilter::apply(float inp)
 {

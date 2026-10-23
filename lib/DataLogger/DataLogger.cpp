@@ -3,7 +3,7 @@
 #include "math.h"
 #define PI 3.14159265358979323846f
 
-DataLogger::DataLogger(uint8_t dum)
+DataLogger::DataLogger(uint8_t)
 {
     this->N_row = N_ROW;
     this->N_col = N_COL;
@@ -17,12 +17,12 @@ DataLogger::DataLogger(uint8_t dum)
 
 DataLogger::~DataLogger() {}
 
-void DataLogger::init_data(void)
+void DataLogger::init_data()
 {
     for (uint16_t k = 0; k < this->N_row; k++)
         for (uint16_t j = 0; j < N_col; j++)
             this->log_data[k * N_col + j] = 0.0f; //(float)k*.1f;
-    this->log_status = 1; // 0 = IDLE, 1 = ready, wait for trigger, 2 = logging, 3 = init_sending, 4 = sending
+    this->log_status = State::READY;
     this->input_type = 1;
     this->count = 0;
     this->ds_count = 0;
@@ -31,7 +31,7 @@ void DataLogger::init_data(void)
     packet = 0;
 }
 
-void DataLogger::reset_data(void)
+void DataLogger::reset_data()
 {
     for (uint16_t k = 0; k < N_row; k++)
         for (uint16_t j = 0; j < N_col; j++)
@@ -43,7 +43,7 @@ void DataLogger::reset_data(void)
 
 void DataLogger::write_to_log(float ti, float val1, float val2, float val3, float val4, float val5, float val6)
 {
-    if (log_status == 2) {
+    if (log_status == State::LOGGING) {
         if (++ds_count == downsamp) {
             ds_count = 0;
             log_data[count * N_col + 0] = ti - ti_offset;
@@ -55,7 +55,7 @@ void DataLogger::write_to_log(float ti, float val1, float val2, float val3, floa
             log_data[count * N_col + 6] = val6;
             count++;
             if (count >= N_row) {
-                log_status = 3;
+                log_status = State::DATA_READY;
                 new_data_available = true;
                 packet = 0;
             }
@@ -66,19 +66,19 @@ void DataLogger::write_to_log(float ti, float val1, float val2, float val3, floa
 float DataLogger::get_set_value(float ti)
 {
     // float output = 0;
-    if (log_status == 2) // run here, if logging is active
+    if (log_status == State::LOGGING) // run here, if logging is active
     {
         if (count == 0)
             ti_offset = ti;
         switch (input_type) {
             case 1: // return a sequence of steps (see few lines below)
-                return StepSeq(ti - ti_offset);
+                return step_sequence(ti - ti_offset);
                 break;
             case 2: // return sine wave
                 return Amp * sinf((ti - ti_offset) * omega) + offset;
                 break;
             case 3:
-                return ZigZag(ti - ti_offset); // return zigzag
+                return zigzag(ti - ti_offset); // return zigzag
                 break;
             default:
                 return 0.0f;
@@ -88,7 +88,7 @@ float DataLogger::get_set_value(float ti)
     return 0.0f;
 }
 
-float DataLogger::StepSeq(float ti)
+float DataLogger::step_sequence(float ti)
 {
     float phi = ti * omega / PI;
     uint16_t fphi = (uint16_t)floor(phi) % 2;
@@ -100,7 +100,7 @@ float DataLogger::StepSeq(float ti)
 
 // return a zig-zag like set value, the parameters are Amplitude, frequency and offset, these are set from the uart
 // communication
-float DataLogger::ZigZag(float ti)
+float DataLogger::zigzag(float ti)
 {
     float phi = ti * omega / (2.0f * PI);
     float fphi = (float)floor(phi);

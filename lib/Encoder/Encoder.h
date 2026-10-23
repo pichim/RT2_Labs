@@ -4,15 +4,13 @@
 #include "EncoderCounter.h"
 
 #ifndef M_PIf
-    #define M_PIf 3.14159265358979323846f /* pi */
+#define M_PIf 3.14159265358979323846f /* pi */
 #endif
 
 class Encoder
 {
 public:
-    explicit Encoder(PinName enc_a_pin,
-                     PinName enc_b_pin,
-                     float counts_per_turn);
+    explicit Encoder(PinName enc_a_pin, PinName enc_b_pin, float counts_per_turn);
     virtual ~Encoder() = default;
 
     void reset();
