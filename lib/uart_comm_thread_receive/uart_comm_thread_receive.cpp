@@ -1,9 +1,12 @@
 // includes
 #include "uart_comm_thread_receive.h"
 
+#include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <cmath>
+
+#include "DataLogger.h"
+#include "GPA.h"
 
 extern DataLogger myDataLogger;
 extern GPA myGPA;
@@ -21,33 +24,32 @@ uart_comm_thread_receive::uart_comm_thread_receive(BufferedSerial *com, float Ts
 
 uart_comm_thread_receive::~uart_comm_thread_receive() {}
 
-void uart_comm_thread_receive::start_uart(void)
+void uart_comm_thread_receive::start_uart()
 {
     thread.start(callback(this, &uart_comm_thread_receive::loop));
-    ticker.attach(callback(this, &uart_comm_thread_receive::sendThreadFlag), microseconds{static_cast<int64_t>(Ts * 1e6f)});
+    ticker.attach(callback(this, &uart_comm_thread_receive::send_thread_flag),
+                  microseconds{static_cast<int64_t>(Ts * 1e6f)});
 }
 
-void uart_comm_thread_receive::sendThreadFlag() { thread.flags_set(threadFlag); }
+void uart_comm_thread_receive::send_thread_flag() { thread.flags_set(threadFlag); }
 
-void uart_comm_thread_receive::loop(void)
+void uart_comm_thread_receive::loop()
 {
     while (true) {
         ThisThread::flags_wait_any(threadFlag);
-        readUartIntoSeparateMessageBuffer();
+        read_uart_into_message_buffer();
     }
 }
 
-void uart_comm_thread_receive::recoverFromReadError(char newByte)
+void uart_comm_thread_receive::recover_from_read_error(char newByte)
 {
     if (isCsmErrorFlag) {
-        recovery_count++;
         char prevByte0 = errBuffer[errIx];
         bool isTerminatorReceived = (prevByte0 == UART_TERM_BY0 && newByte == UART_TERM_BY1);
         if (isTerminatorReceived) {
             messageBufIndex = 0;
             currentMessageDataSize = -1;
             isCsmErrorFlag = false;
-            recovery_count = 0;
         } else {
             char prevByte1 = errBuffer[(errIx + UART_ERR_LEN - 1) % UART_ERR_LEN];
             bool isStartReceived =
@@ -59,7 +61,6 @@ void uart_comm_thread_receive::recoverFromReadError(char newByte)
                 messageBufIndex = 3;
                 currentMessageDataSize = -1;
                 isCsmErrorFlag = false;
-                recovery_count = 0;
             }
         }
     }
@@ -67,32 +68,18 @@ void uart_comm_thread_receive::recoverFromReadError(char newByte)
     errBuffer[errIx] = newByte;
 }
 
-void uart_comm_thread_receive::readUartIntoSeparateMessageBuffer()
+void uart_comm_thread_receive::read_uart_into_message_buffer()
 {
     while (uart->readable()) {
-        bufLengthLLL = bufLengthLL;
-        bufLengthLL = bufLengthLast;
-        bufLengthLast = bufLength;
-        bufLength = uart->read(buffer_rx, sizeof(buffer_rx));
-        // if(bufLength==30){
-        // 	bool fault = buffer_rx[0] == UART_HEAD_BY0 &&
-        // 					buffer_rx[1] == UART_HEAD_BY1 &&
-        // 					buffer_rx[2] == UART_HEAD_BY2 &&
-        // 					buffer_rx[26] == 0 &&
-        // 					buffer_rx[27] == 253;
-        // 	if(fault){
-        // 		m_data->debug_var[4] = msgCount;
-        // 	}
-        // }
-        for (int i = 0; i < bufLength; i++) {
+        const int buf_length = uart->read(buffer_rx, sizeof(buffer_rx));
+        for (int i = 0; i < buf_length; i++) {
             messageBuffer[messageBufIndex] = buffer_rx[i]; // copy to separate buffer
-            byte_count++;
             if (!isCsmErrorFlag) {
                 // Read Header
                 if (messageBufIndex == 2) {
-                    checkMessageBufferHeader();
+                    check_message_buffer_header();
                 } else if (messageBufIndex == 6) {
-                    currentMessageDataSize = parseMessageBufferDataSize();
+                    currentMessageDataSize = parse_message_buffer_data_size();
                 }
 
                 // Read Completed Message
@@ -100,8 +87,7 @@ void uart_comm_thread_receive::readUartIntoSeparateMessageBuffer()
                     messageBufIndex >= (currentMessageDataSize + UART_HEAD_LEN + UART_TAIL_LEN - 1) &&
                     currentMessageDataSize >= 0;
                 if (isMessageLengthReached) {
-                    parseMessageBuffer(i); // parse message
-                    msgCount++;
+                    parse_message_buffer(); // parse message
                     messageBufIndex =
                         messageBufLen - 1; // reset message buffer index to start (waiting for next message)
                     currentMessageDataSize = -1;
@@ -109,26 +95,21 @@ void uart_comm_thread_receive::readUartIntoSeparateMessageBuffer()
             }
             messageBufIndex = (messageBufIndex + 1) % messageBufLen;
             // Recovery
-            recoverFromReadError(buffer_rx[i]);
+            recover_from_read_error(buffer_rx[i]);
         }
     }
 }
 
-void uart_comm_thread_receive::checkMessageBufferHeader()
+void uart_comm_thread_receive::check_message_buffer_header()
 {
     bool headerValid =
         messageBuffer[0] == UART_HEAD_BY0 && messageBuffer[1] == UART_HEAD_BY1 && messageBuffer[2] == UART_HEAD_BY2;
     isCsmErrorFlag = !headerValid;
-    head_err_cnt += !headerValid;
-    if (!headerValid) {
-        // m_data->debug_var[2] = (float) receive_cnt;
-    }
 }
 
-int uart_comm_thread_receive::parseMessageBufferDataSize()
+int uart_comm_thread_receive::parse_message_buffer_data_size()
 {
-    uint16_t dataSize = (static_cast<uint8_t>(messageBuffer[6]) << 8)
-        | static_cast<uint8_t>(messageBuffer[5]);
+    uint16_t dataSize = (static_cast<uint8_t>(messageBuffer[6]) << 8) | static_cast<uint8_t>(messageBuffer[5]);
     if (dataSize > messageBufLen - UART_HEAD_LEN - UART_TAIL_LEN) {
         isCsmErrorFlag = true;
         return -1;
@@ -136,7 +117,7 @@ int uart_comm_thread_receive::parseMessageBufferDataSize()
     return dataSize;
 }
 
-bool uart_comm_thread_receive::verifyChecksumValid(uint16_t dataSize)
+bool uart_comm_thread_receive::verify_checksum_valid(uint16_t dataSize)
 {
     char csm_calc = 0;
     bool csm_valid = false;
@@ -146,9 +127,8 @@ bool uart_comm_thread_receive::verifyChecksumValid(uint16_t dataSize)
             for (uint32_t i = 0; i < csm_len; i++) {
                 csm_calc += messageBuffer[i];
             }
-            csm_valid = csm_calc == messageBuffer[csm_len]
-                && messageBuffer[csm_len + 1] == UART_TERM_BY0
-                && messageBuffer[csm_len + 2] == UART_TERM_BY1;
+            csm_valid = csm_calc == messageBuffer[csm_len] && messageBuffer[csm_len + 1] == UART_TERM_BY0 &&
+                        messageBuffer[csm_len + 2] == UART_TERM_BY1;
         }
     }
     return csm_valid;
@@ -156,44 +136,38 @@ bool uart_comm_thread_receive::verifyChecksumValid(uint16_t dataSize)
 
 // -----------------------------------------------------------------------------
 // analyse data, see comments at top of this file for numbering
-bool uart_comm_thread_receive::parseMessageBuffer(int i)
+bool uart_comm_thread_receive::parse_message_buffer()
 {
-    receive_cnt++;
     uint8_t msg_id1 = static_cast<uint8_t>(messageBuffer[3]);
     uint8_t msg_id2 = static_cast<uint8_t>(messageBuffer[4]);
-    uint16_t N = (static_cast<uint8_t>(messageBuffer[6]) << 8)
-        | static_cast<uint8_t>(messageBuffer[5]);
+    uint16_t N = (static_cast<uint8_t>(messageBuffer[6]) << 8) | static_cast<uint8_t>(messageBuffer[5]);
     float f0, f1, A0, A1;
     float amp, omega, offset;
-    // char stri[20];
     uint8_t Nmeas;
-    if (!verifyChecksumValid(N)) {
+    if (!verify_checksum_valid(N)) {
         isCsmErrorFlag = true;
-        csm_err_cnt++;
-        // m_data->debug_var[0] = (float) buffer_rx[0];
-        // m_data->debug_var[1] = (float) messageBuffer[0];
         return false;
     }
     switch (msg_id1) {
         case 210:
             switch (msg_id2) {
                 case 101: // receive start signal and Amp, Freq, offset values
-                    if (N != 14 || static_cast<uint8_t>(messageBuffer[7]) < 1
-                        || static_cast<uint8_t>(messageBuffer[7]) > 3 || static_cast<uint8_t>(messageBuffer[20]) == 0)
+                    if (N != 14 || static_cast<uint8_t>(messageBuffer[7]) < 1 ||
+                        static_cast<uint8_t>(messageBuffer[7]) > 3 || static_cast<uint8_t>(messageBuffer[20]) == 0)
                         return false;
                     memcpy(&amp, &messageBuffer[8], sizeof(float));
                     memcpy(&omega, &messageBuffer[12], sizeof(float));
                     memcpy(&offset, &messageBuffer[16], sizeof(float));
                     if (!std::isfinite(amp) || !std::isfinite(omega) || !std::isfinite(offset) || omega <= 0.0f)
                         return false;
-                    if (myDataLogger.log_status == 1) {
+                    if (myDataLogger.log_status == DataLogger::State::READY) {
                         myDataLogger.reset_data();
                         myDataLogger.input_type = (uint8_t)messageBuffer[7];
                         myDataLogger.Amp = amp;
                         myDataLogger.omega = omega;
                         myDataLogger.offset = offset;
                         myDataLogger.downsamp = (uint8_t)messageBuffer[20];
-                        myDataLogger.log_status = 2;
+                        myDataLogger.log_status = DataLogger::State::LOGGING;
                     }
                     break;
             }

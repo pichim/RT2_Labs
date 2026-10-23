@@ -173,7 +173,7 @@ float PID_Cntrl::get_bd() { return bd; }
 
 float PID_Cntrl::get_ad() { return ad; }
 
-float PID_Cntrl::getCurrentOutput(void) { return uf; }
+float PID_Cntrl::getCurrentOutput() { return uf; }
 
 void PID_Cntrl::setCoefficients(float P, float I, float D, float tau_f, float tau_ro, float Ts)
 {

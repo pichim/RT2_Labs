@@ -37,7 +37,7 @@ realtime_thread::realtime_thread(IO_handler *io_handler, float Ts)
 realtime_thread::~realtime_thread() {}
 
 // this is the main loop called every Ts with high priority
-void realtime_thread::loop(void)
+void realtime_thread::loop()
 {
     // Current controller, matching matlab/inv_rot_pen_ini.m.
     const float supply_voltage = 24.0f;
@@ -51,14 +51,8 @@ void realtime_thread::loop(void)
     const float tau_ro_i = 0.0f;
 #endif
     PID_Cntrl pid_i;
-    pid_i.setup(kp_i,
-                ki_i,
-                0.0f,
-                0.0f,
-                tau_ro_i,
-                m_Ts,
-                -supply_voltage + offset_voltage,
-                supply_voltage - offset_voltage);
+    pid_i.setup(
+        kp_i, ki_i, 0.0f, 0.0f, tau_ro_i, m_Ts, -supply_voltage + offset_voltage, supply_voltage - offset_voltage);
 
     // Encoder notch filters: same frequency/damping, recalculated for m_Ts.
     const float f_notch = 680.0f;
@@ -217,10 +211,11 @@ float realtime_thread::saturate(float x, float ll, float ul)
 
 float realtime_thread::shortangle(float angle) { return atan2f(sinf(angle), cosf(angle)); }
 
-void realtime_thread::sendSignal() { m_Thread.flags_set(m_ThreadFlag); }
+void realtime_thread::send_thread_flag() { m_Thread.flags_set(m_ThreadFlag); }
 
-void realtime_thread::start_loop(void)
+void realtime_thread::start_loop()
 {
     m_Thread.start(callback(this, &realtime_thread::loop));
-    m_Ticker.attach(callback(this, &realtime_thread::sendSignal), microseconds{static_cast<int64_t>(m_Ts * 1e6f)});
+    m_Ticker.attach(callback(this, &realtime_thread::send_thread_flag),
+                    microseconds{static_cast<int64_t>(m_Ts * 1e6f)});
 }

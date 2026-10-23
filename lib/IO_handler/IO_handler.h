@@ -28,31 +28,31 @@ class IO_handler
 public:
     IO_handler();
     virtual ~IO_handler();
-    void update(void); // Sample hardware once in realtime_thread.
-    float read_encoder_motor(void);
-    float read_encoder_pendulum(void);
-    void reset_encoders(void);
+    void update(); // Sample hardware once in realtime_thread.
+    float read_encoder_motor();
+    float read_encoder_pendulum();
+    void reset_encoders();
     void write_pwm_motor(float val);
-    float get_set_value(void) const;
+    float get_set_value() const;
     void set_enable_motor(bool en);
-    float read_current(void);
+    float read_current();
     void set_dir(uint8_t d);
     void set_enable_rtt_do(bool en);
 
     // Cached telemetry; UART must not read/update the encoder counters itself.
-    float get_current(void) const;
-    float get_theta1(void) const;
-    float get_theta2(void) const;
+    float get_current() const;
+    float get_theta1() const;
+    float get_theta2() const;
     void set_user_led(bool on);
-    bool get_and_reset_button_state(void);
+    bool get_and_reset_button_state();
 
 private:
     DebounceIn m_button;
     DigitalOut m_user_led;
-    volatile bool m_button_pressed{false};
-    // Individual UART telemetry values are shared with the UART sender.
+    volatile bool m_button_pressed = false;
+    // Shared with the UART sender; each value is read independently.
     std::atomic<float> m_current{0.0f}, m_theta1{0.0f}, m_theta2{0.0f};
-    void button_pressed(void);
+    void button_pressed();
 
     Encoder m_encoder_motor;    // Motor encoder
     Encoder m_encoder_pendulum; // Pendulum encoder

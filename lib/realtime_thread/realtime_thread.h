@@ -13,7 +13,7 @@ class realtime_thread
 public:
     realtime_thread(IO_handler *, float Ts);
     virtual ~realtime_thread();
-    void start_loop(void);
+    void start_loop();
 
 private:
     enum ControlState {
@@ -23,14 +23,14 @@ private:
     };
 
     IO_handler *m_IO_handler;
-    void loop(void);
+    void loop();
     Thread m_Thread;
     Ticker m_Ticker;
     ThreadFlag m_ThreadFlag;
     Timer m_Timer;
     float m_Ts;
     ControlState m_state;
-    void sendSignal();
+    void send_thread_flag();
     float saturate(float, float, float);
     float shortangle(float);
 };

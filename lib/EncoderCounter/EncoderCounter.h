@@ -2,7 +2,10 @@
  * EncoderCounter.h
  * Copyright (c) 2018, ZHAW
  * All rights reserved.
- * @authors M. Honegger / honr, minor adjustments M. Peter / pmic / pichim
+ *
+ *  Created on: 26.01.2018
+ *      Author: Marcel Honegger
+ *      Minor adjustments: Michael Peter
  */
 
 #ifndef ENCODER_COUNTER_H_
@@ -10,6 +13,7 @@
 
 #include <cstdlib>
 #include <stdint.h>
+
 #include "mbed.h"
 
 /**
@@ -20,17 +24,16 @@ class EncoderCounter
 {
 
 public:
-
     explicit EncoderCounter(PinName a, PinName b);
-    virtual     ~EncoderCounter();
-    void        reset();
-    void        reset(int16_t offset);
-    int16_t     read();
+    virtual ~EncoderCounter();
+
+    void reset();
+    void reset(int16_t offset);
+    int16_t read();
     operator int16_t();
 
 private:
-
-    TIM_TypeDef*    TIM;
+    TIM_TypeDef *TIM;
 };
 
 #endif /* ENCODER_COUNTER_H_ */

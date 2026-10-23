@@ -26,7 +26,7 @@ uart_comm_thread_send::uart_comm_thread_send(IO_handler *io, BufferedSerial *com
 uart_comm_thread_send::~uart_comm_thread_send() {}
 
 // #### run the statemachine
-void uart_comm_thread_send::loop(void)
+void uart_comm_thread_send::loop()
 {
     send_state_slow = 100;
 
@@ -39,7 +39,7 @@ void uart_comm_thread_send::loop(void)
     } // loop
 }
 
-void uart_comm_thread_send::send_gpa_data(void)
+void uart_comm_thread_send::send_gpa_data()
 {
     float dum[7];
     if (myGPA.new_data_available) {
@@ -60,7 +60,7 @@ void uart_comm_thread_send::send_gpa_data(void)
     }
 }
 
-void uart_comm_thread_send::send_slow_data(void)
+void uart_comm_thread_send::send_slow_data()
 {
     // char local_buffer[5] = {0, 0, 0, 0, 0};
     float buf[3];
@@ -85,7 +85,7 @@ void uart_comm_thread_send::send_slow_data(void)
                 uint32_t remaining = (sentBytes < totalBytes) ? (totalBytes - sentBytes) : 0;
 
                 if (remaining == 0) {
-                    myDataLogger.log_status = 1;
+                    myDataLogger.log_status = DataLogger::State::READY;
                     myDataLogger.new_data_available = false;
                     send_state_slow = 211; // send terminator next
                     break;
@@ -103,7 +103,7 @@ void uart_comm_thread_send::send_slow_data(void)
                 ++myDataLogger.packet;
 
                 if (remaining <= PACK_SIZE) {
-                    myDataLogger.log_status = 1;
+                    myDataLogger.log_status = DataLogger::State::READY;
                     myDataLogger.new_data_available = false;
                     send_state_slow = 211; // send terminator next
                 }
@@ -125,15 +125,16 @@ void uart_comm_thread_send::send_slow_data(void)
 }
 
 // ------------------- start uart ----------------
-void uart_comm_thread_send::start_uart(void)
+void uart_comm_thread_send::start_uart()
 {
 
     thread.start(callback(this, &uart_comm_thread_send::loop));
-    ticker.attach(callback(this, &uart_comm_thread_send::sendThreadFlag), microseconds{static_cast<int64_t>(Ts * 1e6f)});
+    ticker.attach(callback(this, &uart_comm_thread_send::send_thread_flag),
+                  microseconds{static_cast<int64_t>(Ts * 1e6f)});
 }
 
 // this is for realtime OS
-void uart_comm_thread_send::sendThreadFlag() { thread.flags_set(threadFlag); }
+void uart_comm_thread_send::send_thread_flag() { thread.flags_set(threadFlag); }
 
 // ---------------------  send N char data --------------------------------------
 void uart_comm_thread_send::send(uint8_t id1, uint8_t id2, uint16_t N, const char *m)

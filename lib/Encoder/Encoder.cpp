@@ -1,9 +1,8 @@
 #include "Encoder.h"
 
-Encoder::Encoder(PinName enc_a_pin,
-                 PinName enc_b_pin,
-                 float counts_per_turn) : m_EncoderCounter(enc_a_pin, enc_b_pin)
-                                        , m_rotation_gain(2.0f * M_PIf / counts_per_turn)
+Encoder::Encoder(PinName enc_a_pin, PinName enc_b_pin, float counts_per_turn)
+    : m_EncoderCounter(enc_a_pin, enc_b_pin)
+    , m_rotation_gain(2.0f * M_PIf / counts_per_turn)
 {
     reset();
 }
